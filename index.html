@@ -1,0 +1,598 @@
+<meta charset="utf-8" />
+<title>The Card Box</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --box: #d9c8a2;
+    --box-raised: #ede3c7;
+    --box-deep: #c7b48a;
+    --ink: #26211a;
+    --ink-soft: #6f6350;
+    --rule: #b7a374;
+    --stamp: #a3402a;
+    --stamp-strong: #7f2f1e;
+    --gold: #9c7018;
+    --card-white: #f6f0e1;
+    --shadow: rgba(38, 33, 26, 0.22);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --box: #201a13;
+      --box-raised: #2a231a;
+      --box-deep: #17120d;
+      --ink: #ece2c8;
+      --ink-soft: #a99a7c;
+      --rule: #443a29;
+      --stamp: #d16b4c;
+      --stamp-strong: #e08466;
+      --gold: #d9ab4e;
+      --card-white: #2e271c;
+      --shadow: rgba(0, 0, 0, 0.55);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --box: #201a13;
+    --box-raised: #2a231a;
+    --box-deep: #17120d;
+    --ink: #ece2c8;
+    --ink-soft: #a99a7c;
+    --rule: #443a29;
+    --stamp: #d16b4c;
+    --stamp-strong: #e08466;
+    --gold: #d9ab4e;
+    --card-white: #2e271c;
+    --shadow: rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --box: #d9c8a2;
+    --box-raised: #ede3c7;
+    --box-deep: #c7b48a;
+    --ink: #26211a;
+    --ink-soft: #6f6350;
+    --rule: #b7a374;
+    --stamp: #a3402a;
+    --stamp-strong: #7f2f1e;
+    --gold: #9c7018;
+    --card-white: #f6f0e1;
+    --shadow: rgba(38, 33, 26, 0.22);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--box);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Iowan Old Style", serif;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 3px, color-mix(in srgb, var(--ink) 3%, transparent) 3px, color-mix(in srgb, var(--ink) 3%, transparent) 4px);
+  }
+
+  .display {
+    font-family: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .mono {
+    font-family: "Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label {
+    font-family: "Space Mono", ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  a { color: inherit; }
+
+  /* ---------- Lid header ---------- */
+  header.lid {
+    position: relative;
+    padding: 3.75rem 1.5rem 2.75rem;
+    text-align: center;
+    border-bottom: 3px solid var(--rule);
+    background: var(--box-raised);
+  }
+  header.lid a.lid-link { text-decoration: none; display: block; }
+  header.lid .label { display: block; margin-bottom: 1rem; }
+  header.lid h1 {
+    margin: 0;
+    font-size: clamp(2.6rem, 8vw, 4.6rem);
+    letter-spacing: 0.02em;
+    line-height: 0.92;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  header.lid h1 span { color: var(--stamp); }
+  header.lid p {
+    max-width: 32rem;
+    margin: 1.1rem auto 0;
+    color: var(--ink-soft);
+    font-size: 1rem;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  main {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+
+  [hidden] { display: none !important; }
+
+  /* ---------- Category menu (home) ---------- */
+  .menu {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2.25rem;
+  }
+  @media (max-width: 640px) {
+    .menu { grid-template-columns: repeat(2, 1fr); }
+  }
+  .cat-tile {
+    display: block;
+    background: var(--box-raised);
+    padding: 1.6rem 1.1rem;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .cat-tile:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); }
+  .cat-tile:focus-visible { outline: 2px solid var(--stamp); outline-offset: -2px; }
+  .cat-tile .label { margin-bottom: 0.5rem; }
+  .cat-tile .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink);
+    font-family: "Space Mono", monospace;
+  }
+
+  /* ---------- Category page ---------- */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    font-family: "Space Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+    margin-bottom: 1.5rem;
+  }
+  .back-link:hover { color: var(--stamp); }
+
+  .page-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--rule);
+  }
+  .page-head h2 {
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    letter-spacing: 0.01em;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1.6rem;
+  }
+  .toolbar input[type="search"] {
+    flex: 1 1 14rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid var(--rule);
+    background: var(--card-white);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  .toolbar select {
+    padding: 0.65rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--rule);
+    background: var(--card-white);
+    color: var(--ink);
+    font-family: "Space Mono", monospace;
+    font-size: 0.82rem;
+  }
+  .toolbar input:focus-visible, .toolbar select:focus-visible {
+    outline: 2px solid var(--stamp);
+    outline-offset: 1px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+  }
+  .chip {
+    font-family: "Space Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    padding: 0.35rem 0.75rem;
+    border-radius: 3px;
+    border: 1px dashed var(--rule);
+    background: var(--box-raised);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transform: rotate(-0.6deg);
+  }
+  .chip:nth-child(even) { transform: rotate(0.5deg); }
+  .chip.active {
+    background: var(--stamp);
+    border-color: var(--stamp);
+    color: var(--card-white);
+  }
+  .chip:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+
+  /* ---------- List table ---------- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--card-white);
+  }
+  table.list-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 42rem;
+  }
+  .list-table thead th {
+    text-align: left;
+    font-family: "Space Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 0.85rem 0.9rem;
+    border-bottom: 2px solid var(--rule);
+    white-space: nowrap;
+  }
+  .list-table th.narrow-col { width: 6rem; }
+  .list-table th.brand-col { width: 12rem; }
+  .list-table tbody td {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.9rem;
+    vertical-align: top;
+  }
+  .list-table tbody tr:last-child td { border-bottom: none; }
+  .list-table tbody tr:hover { background: color-mix(in srgb, var(--stamp) 7%, transparent); }
+  .list-table .brand-cell { font-weight: 600; }
+  .list-table .key-cards-cell { color: var(--ink-soft); }
+  .year-link {
+    text-decoration: none;
+    color: var(--stamp);
+    font-weight: 700;
+    border-bottom: 1px dashed var(--stamp);
+  }
+  .year-link:hover { color: var(--stamp-strong); border-bottom-style: solid; }
+
+  .list-table .rc-mark {
+    display: inline-block;
+    margin-left: 0.4rem;
+    font-family: "Space Mono", monospace;
+    font-size: 0.62rem;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    padding: 0.05rem 0.3rem;
+    vertical-align: middle;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    border: 2px dashed var(--rule);
+    border-radius: 14px;
+    color: var(--ink-soft);
+  }
+  .empty-state .display { font-size: 1.5rem; color: var(--ink); margin-bottom: 0.5rem; letter-spacing: 0.01em; }
+  .empty-state p { max-width: 26rem; margin: 0.4rem auto 0; line-height: 1.55; }
+
+</style>
+
+<header class="lid">
+  <a class="lid-link" href="#">
+    <span class="label">Est. 2026 &middot; hobby archive</span>
+    <h1 class="display">The Card<span> Box</span></h1>
+    <p>Thank you for my favorite childhood memories&hellip;</p>
+  </a>
+</header>
+
+<main>
+  <div id="screen-home">
+    <div class="menu" id="menu"></div>
+  </div>
+
+  <div id="screen-category" hidden>
+    <a class="back-link" href="#">&larr; The Card Box</a>
+    <div class="page-head">
+      <h2 class="display" id="cat-title"></h2>
+      <span class="label" id="cat-count"></span>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search brand or key cards&hellip;" aria-label="Search sets" />
+      <select id="sort" aria-label="Sort sets">
+        <option value="added">Newest added</option>
+        <option value="year-desc">Year, newest first</option>
+        <option value="year-asc">Year, oldest first</option>
+        <option value="brand">Brand, A&ndash;Z</option>
+      </select>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <div id="list-area"></div>
+  </div>
+
+  <div id="screen-set" hidden>
+    <a class="back-link" id="set-back-link" href="#">&larr; Back</a>
+    <div class="page-head">
+      <h2 class="display" id="set-title"></h2>
+      <span class="label" id="set-count"></span>
+    </div>
+
+    <div id="set-list-area"></div>
+  </div>
+</main>
+
+<script>
+  // Sets are added here as they're catalogued — one row per Year + Brand.
+  // { category, year, brand, keyCards, added }
+  // category is one of: "baseball", "football", "hockey", "comic"
+  // keyCards is a short free-text list of standout cards from that set.
+  const sets = [
+    { category: "hockey", year: 1979, brand: "O-Pee-Chee", keyCards: "", added: 1 },
+  ];
+
+  // The full checklist for a set (optional — only needed for sets you want to break out
+  // player by player). Matched to a row in `sets` by category + year + brand.
+  // { category, year, brand, player, cardNumber, rookie }
+  const setCards = [
+    // example (delete once real cards are added):
+    // { category: "baseball", year: 1989, brand: "Upper Deck", player: "Ken Griffey Jr.", cardNumber: "1", rookie: true },
+  ];
+
+  const CATEGORIES = [
+    { key: 'baseball', label: 'Baseball Cards' },
+    { key: 'football', label: 'Football Cards' },
+    { key: 'hockey', label: 'Hockey Cards' },
+    { key: 'comic', label: 'Comic Book Cards' },
+  ];
+
+  const screenHome = document.getElementById('screen-home');
+  const screenCategory = document.getElementById('screen-category');
+  const screenSet = document.getElementById('screen-set');
+  const menu = document.getElementById('menu');
+  const catTitle = document.getElementById('cat-title');
+  const catCount = document.getElementById('cat-count');
+  const chipsWrap = document.getElementById('chips');
+  const listArea = document.getElementById('list-area');
+  const searchInput = document.getElementById('search');
+  const sortSelect = document.getElementById('sort');
+  const setBackLink = document.getElementById('set-back-link');
+  const setTitle = document.getElementById('set-title');
+  const setCount = document.getElementById('set-count');
+  const setListArea = document.getElementById('set-list-area');
+
+  let activeCategory = null;
+  let activeDecade = null;
+  let query = '';
+
+  function decadeOf(year) { return Math.floor(year / 10) * 10; }
+  function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  // Hockey sets are conventionally labeled by season (e.g. 1979-80), other sports by single year.
+  function displayYear(s) {
+    if (!s.year) return '';
+    if (s.category === 'hockey') return `${s.year}-${String((s.year + 1) % 100).padStart(2, '0')}`;
+    return String(s.year);
+  }
+  function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+  function setSlug(s) { return `${s.year}-${slugify(s.brand)}`; }
+
+  function renderMenu() {
+    menu.innerHTML = CATEGORIES.map(cat => {
+      const count = sets.filter(s => s.category === cat.key).length;
+      return `<a class="cat-tile" href="#${cat.key}">
+        <div class="label">${cat.label}</div>
+        <div class="value">${count}</div>
+      </a>`;
+    }).join('');
+  }
+
+  function renderChips() {
+    const inCategory = sets.filter(s => s.category === activeCategory);
+    const decades = [...new Set(inCategory.map(s => decadeOf(s.year)).filter(Boolean))].sort((a, b) => a - b);
+    if (decades.length < 2) { chipsWrap.innerHTML = ''; return; }
+    chipsWrap.innerHTML = `<button class="chip${activeDecade === null ? ' active' : ''}" data-decade="">All decades</button>` +
+      decades.map(d => `<button class="chip${activeDecade === d ? ' active' : ''}" data-decade="${d}">${d}s</button>`).join('');
+    chipsWrap.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeDecade = btn.dataset.decade === '' ? null : Number(btn.dataset.decade);
+        renderChips();
+        renderList();
+      });
+    });
+  }
+
+  function visibleSets() {
+    let list = sets.filter(s => s.category === activeCategory);
+    if (activeDecade !== null) list = list.filter(s => decadeOf(s.year) === activeDecade);
+    if (query) {
+      const q = query.toLowerCase();
+      list = list.filter(s => (s.brand || '').toLowerCase().includes(q) || (s.keyCards || '').toLowerCase().includes(q));
+    }
+    const mode = sortSelect.value;
+    if (mode === 'year-desc') list.sort((a, b) => b.year - a.year);
+    else if (mode === 'year-asc') list.sort((a, b) => a.year - b.year);
+    else if (mode === 'brand') list.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''));
+    else list.sort((a, b) => (b.added || 0) - (a.added || 0));
+    return list;
+  }
+
+  function renderList() {
+    const total = sets.filter(s => s.category === activeCategory).length;
+    const list = visibleSets();
+    catCount.textContent = total + (total === 1 ? ' set' : ' sets');
+
+    if (total === 0) {
+      listArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No sets yet</div>
+          <p>Send over a year, brand, and any key cards from that set and it'll get slotted in here.</p>
+        </div>`;
+      return;
+    }
+    if (list.length === 0) {
+      listArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No matches</div>
+          <p>Nothing in this category fits the current filters.</p>
+        </div>`;
+      return;
+    }
+
+    listArea.innerHTML = `
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th class="narrow-col">Year</th>
+              <th class="brand-col">Brand</th>
+              <th>Key Cards</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(s => `
+              <tr>
+                <td class="mono">${s.year ? `<a class="year-link" href="#${s.category}/${setSlug(s)}">${displayYear(s)}</a>` : '&mdash;'}</td>
+                <td class="brand-cell">${esc(s.brand) || '&mdash;'}</td>
+                <td class="key-cards-cell">${esc(s.keyCards) || '&mdash;'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderSetDetail(cat, set) {
+    const list = setCards.filter(c => c.category === set.category && c.year === set.year && c.brand === set.brand);
+    setTitle.textContent = `${displayYear(set)} ${set.brand}`;
+    setCount.textContent = list.length + (list.length === 1 ? ' card logged' : ' cards logged');
+    setBackLink.href = `#${cat.key}`;
+    setBackLink.textContent = `← ${cat.label}`;
+    document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
+
+    if (list.length === 0) {
+      setListArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No cards logged</div>
+          <p>Send over player names, card numbers, and which are rookie cards and they'll get slotted in here.</p>
+        </div>`;
+      return;
+    }
+
+    setListArea.innerHTML = `
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th class="narrow-col">Card #</th>
+              <th>Player</th>
+              <th>Rookie</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(c => `
+              <tr>
+                <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
+                <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
+                <td>${c.rookie ? 'Yes' : 'No'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function route() {
+    const [rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
+    const cat = CATEGORIES.find(c => c.key === rawCategory);
+
+    if (cat && rawSetSlug) {
+      const set = sets.find(s => s.category === cat.key && setSlug(s) === rawSetSlug);
+      if (set) {
+        renderSetDetail(cat, set);
+        screenHome.hidden = true;
+        screenCategory.hidden = true;
+        screenSet.hidden = false;
+        window.scrollTo(0, 0);
+        return;
+      }
+      // Unknown set — fall through to the category page instead.
+      location.hash = `#${cat.key}`;
+      return;
+    }
+
+    if (cat) {
+      activeCategory = cat.key;
+      activeDecade = null;
+      query = '';
+      searchInput.value = '';
+      sortSelect.value = 'added';
+      catTitle.textContent = cat.label;
+      document.title = `The Card Box — ${cat.label}`;
+      renderChips();
+      renderList();
+      screenHome.hidden = true;
+      screenCategory.hidden = false;
+      screenSet.hidden = true;
+    } else {
+      renderMenu();
+      document.title = 'The Card Box';
+      screenHome.hidden = false;
+      screenCategory.hidden = true;
+      screenSet.hidden = true;
+    }
+    window.scrollTo(0, 0);
+  }
+
+  searchInput.addEventListener('input', () => { query = searchInput.value; renderList(); });
+  sortSelect.addEventListener('change', renderList);
+  window.addEventListener('hashchange', route);
+
+  route();
+</script>
