@@ -160,6 +160,17 @@
     font-weight: 700;
     color: var(--stamp);
   }
+  .grading-link {
+    display: block;
+    margin-top: 0.4rem;
+    font-family: "Space Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    color: var(--ink-soft);
+  }
+  .grading-link:hover { color: var(--stamp); }
   @media (max-width: 640px) {
     .total-count {
       position: static;
@@ -293,6 +304,10 @@
     margin-bottom: 1.5rem;
   }
   .back-link:hover { color: var(--stamp); }
+
+  .nav-row { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.5rem; }
+  .nav-row .back-link { margin-bottom: 0; }
+  .home-link { padding-left: 0.9rem; border-left: 1px solid var(--rule); }
 
   .page-eyebrow {
     display: block;
@@ -474,6 +489,77 @@
   .checklist-btn:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); border-color: var(--stamp); }
   .checklist-btn:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
 
+  .condition-select {
+    font-family: "Space Mono", monospace;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--card-white);
+    color: var(--ink);
+    max-width: 11rem;
+  }
+  .condition-select:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
+
+  .cardtype-input {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--card-white);
+    color: var(--ink);
+    width: 7rem;
+  }
+  .cardtype-input::placeholder { color: var(--ink-soft); opacity: 0.6; }
+  .cardtype-input:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
+
+  .th-link { color: inherit; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 2px; }
+  .th-link:hover { color: var(--stamp); }
+
+  .grading-list { display: flex; flex-direction: column; gap: 0.9rem; }
+  .grading-entry {
+    display: flex;
+    gap: 1.1rem;
+    align-items: flex-start;
+    background: var(--card-white);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .grading-entry .grade-num {
+    flex-shrink: 0;
+    width: 2.4rem;
+    font-family: "Space Mono", monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--stamp);
+    line-height: 1;
+  }
+  .grading-entry .grade-name {
+    margin: 0 0 0.3rem;
+    font-size: 1.02rem;
+    font-weight: 600;
+  }
+  .grading-entry .grade-desc {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .def-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .def-entry {
+    background: var(--card-white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 0.75rem 1.1rem;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .def-entry .def-term { font-weight: 600; color: var(--ink); }
+  .def-entry .def-desc { color: var(--ink-soft); }
+
   .empty-state {
     text-align: center;
     padding: 4rem 1.5rem;
@@ -490,6 +576,7 @@
   <div class="total-count">
     <span class="label">Total Cards</span>
     <span class="count-value mono" id="total-count-value">0</span>
+    <a class="grading-link" href="#grading-guide">Grading Guide</a>
   </div>
   <a class="lid-link" href="#">
     <span class="label">Est. 2026 &middot; hobby archive</span>
@@ -538,7 +625,10 @@
   </div>
 
   <div id="screen-set" hidden>
-    <a class="back-link" id="set-back-link" href="#">&larr; Back</a>
+    <div class="nav-row">
+      <a class="back-link" id="set-back-link" href="#">&larr; Back</a>
+      <a class="back-link home-link" href="#">Home</a>
+    </div>
     <span class="label page-eyebrow">The Collection</span>
     <div class="page-head">
       <h2 class="display" id="set-title"></h2>
@@ -573,6 +663,20 @@
     <div class="chips" id="ind-chips"></div>
 
     <div id="ind-list-area"></div>
+  </div>
+
+  <div id="screen-grading" hidden>
+    <a class="back-link" href="#">&larr; The Card Box</a>
+    <span class="label page-eyebrow">Reference</span>
+    <div class="page-head">
+      <h2 class="display">Reference Guide</h2>
+    </div>
+
+    <h3 class="section-title display">1 to 10 Grading Scale</h3>
+    <div class="grading-list" id="grading-list"></div>
+
+    <h3 class="section-title display" style="margin-top:2.75rem;">Card Type</h3>
+    <div class="def-list" id="cardtype-list"></div>
   </div>
 </main>
 
@@ -1808,6 +1912,7 @@
   const screenCategory = document.getElementById('screen-category');
   const screenSet = document.getElementById('screen-set');
   const screenIndividual = document.getElementById('screen-individual');
+  const screenGrading = document.getElementById('screen-grading');
   const menuCompleted = document.getElementById('menu-completed');
   const menuIndividual = document.getElementById('menu-individual');
   const catTitle = document.getElementById('cat-title');
@@ -2018,6 +2123,84 @@
     try { localStorage.setItem(checklistKey(set, cardNumber), checked ? '1' : '0'); } catch (e) {}
   }
 
+  const GRADING_SCALE = [
+    { grade: '10', name: 'Gem Mint / Pristine', desc: 'A near-perfect card with sharp corners, no visible flaws, and centered borders (about 55/45 or better on the front).' },
+    { grade: '9', name: 'Mint', desc: 'A superb card with minor flaws, such as a tiny touch of wear on one corner or slightly off-center borders.' },
+    { grade: '8', name: 'Near Mint-Mint (NM-MT)', desc: 'High quality with slight corner softness under magnification or minor surface gloss loss.' },
+    { grade: '7', name: 'Near Mint (NM)', desc: 'Shows a minor flaw like light edge wear or a small print spot.' },
+    { grade: '6', name: 'Excellent-Mint (EX-MT)', desc: 'Displays light fuzzy corners and minor surface wear, but still presents nicely.' },
+    { grade: '5', name: 'Excellent (EX)', desc: 'Noticeable corner wear and minor scratches, but no severe creasing.' },
+    { grade: '4', name: 'Very Good-Excellent (VG-EX)', desc: 'Moderate wear with softer rounded corners or light surface wrinkles.' },
+    { grade: '3', name: 'Very Good (VG)', desc: 'Clearly worn with obvious corner rounding and possible light creases.' },
+    { grade: '2', name: 'Good', desc: 'Heavily handled with multiple creases, rounding, and scuffing.' },
+    { grade: '1', name: 'Poor (PR)', desc: 'Severe damage including heavy creases, tears, stains, or paper loss.' },
+  ];
+  function renderGradingGuide() {
+    document.getElementById('grading-list').innerHTML = GRADING_SCALE.map(g => `
+      <div class="grading-entry">
+        <div class="grade-num mono">${g.grade}</div>
+        <div>
+          <div class="grade-name">${esc(g.name)}</div>
+          <p class="grade-desc">${esc(g.desc)}</p>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const CARD_TYPE_DEFS = [
+    { name: 'Base cards', desc: 'the regular cards in the main set' },
+    { name: 'Rookie cards', desc: 'a player’s first major card' },
+    { name: 'Inserts', desc: 'special cards outside the standard base design' },
+    { name: 'Parallels', desc: 'alternate versions with different colors, finishes, or numbering' },
+    { name: 'Short prints (SP)', desc: 'produced in smaller quantities' },
+    { name: 'Variations', desc: 'different photos, designs, or details from the standard card' },
+    { name: 'Numbered cards', desc: 'limited copies, such as /99' },
+    { name: 'Autographs', desc: 'signed cards' },
+    { name: 'Relic or memorabilia cards', desc: 'contain jersey, bat, patch, or equipment pieces' },
+    { name: 'Error cards', desc: 'contain printing or information mistakes' },
+    { name: 'Promotional cards', desc: 'distributed through special events or offers' },
+    { name: 'Checklist cards', desc: 'list cards within the set' },
+  ];
+  function renderCardTypeGuide() {
+    document.getElementById('cardtype-list').innerHTML = CARD_TYPE_DEFS.map(t => `
+      <div class="def-entry">
+        <span class="def-term">${esc(t.name)}</span><span class="def-desc"> &mdash; ${esc(t.desc)}</span>
+      </div>
+    `).join('');
+  }
+
+  function cardTypeKey(set, cardNumber) {
+    return `cardbox-cardtype:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
+  }
+  function getCardType(set, cardNumber) {
+    try { return localStorage.getItem(cardTypeKey(set, cardNumber)) || ''; } catch (e) { return ''; }
+  }
+  function setCardType(set, cardNumber, value) {
+    try { localStorage.setItem(cardTypeKey(set, cardNumber), value); } catch (e) {}
+  }
+
+  const CONDITION_GRADES = [
+    { value: '10', label: '10 – Gem Mint / Pristine' },
+    { value: '9', label: '9 – Mint' },
+    { value: '8', label: '8 – Near Mint-Mint (NM-MT)' },
+    { value: '7', label: '7 – Near Mint (NM)' },
+    { value: '6', label: '6 – Excellent-Mint (EX-MT)' },
+    { value: '5', label: '5 – Excellent (EX)' },
+    { value: '4', label: '4 – Very Good-Excellent (VG-EX)' },
+    { value: '3', label: '3 – Very Good (VG)' },
+    { value: '2', label: '2 – Good' },
+    { value: '1', label: '1 – Poor' },
+  ];
+  function conditionKey(set, cardNumber) {
+    return `cardbox-condition:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
+  }
+  function getCardCondition(set, cardNumber) {
+    try { return localStorage.getItem(conditionKey(set, cardNumber)) || ''; } catch (e) { return ''; }
+  }
+  function setCardCondition(set, cardNumber, value) {
+    try { localStorage.setItem(conditionKey(set, cardNumber), value); } catch (e) {}
+  }
+
   function renderSetDetail(cat, set) {
     currentSet = set;
     currentSetCat = cat;
@@ -2046,8 +2229,10 @@
               <th class="narrow-col">Card #</th>
               <th>Player</th>
               <th>Team</th>
+              <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
               <th>Status</th>
               <th class="narrow-col">Collection Checklist</th>
+              <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
             </tr>
           </thead>
           <tbody>
@@ -2056,8 +2241,15 @@
                 <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
                 <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
                 <td>${esc(c.team) || '&mdash;'}</td>
+                <td>
+                  <select class="condition-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Condition of ${esc(c.player)}">
+                    <option value=""${getCardCondition(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+                    ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(set, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
+                  </select>
+                </td>
                 <td>${c.rookie ? 'Rookie' : 'Active'}</td>
                 <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
+                <td><input type="text" class="cardtype-input" data-cardnum="${esc(c.cardNumber)}" value="${esc(getCardType(set, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
               </tr>
             `).join('')}
           </tbody>
@@ -2070,6 +2262,16 @@
         const nowChecked = list.filter(c => isCardChecked(set, c.cardNumber)).length;
         setCount.textContent = `${nowChecked} of ${list.length} verified`;
         updateTotalCount();
+      });
+    });
+    setListArea.querySelectorAll('.condition-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        setCardCondition(set, sel.dataset.cardnum, sel.value);
+      });
+    });
+    setListArea.querySelectorAll('.cardtype-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        setCardType(set, inp.dataset.cardnum, inp.value);
       });
     });
   }
@@ -2164,6 +2366,7 @@
     screenCategory.hidden = name !== 'category';
     screenSet.hidden = name !== 'set';
     screenIndividual.hidden = name !== 'individual';
+    screenGrading.hidden = name !== 'grading';
     window.scrollTo(0, 0);
   }
 
@@ -2179,6 +2382,14 @@
     updateTotalCount();
     const [section, rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
     const cat = CATEGORIES.find(c => c.key === rawCategory);
+
+    if (section === 'grading-guide') {
+      renderGradingGuide();
+      renderCardTypeGuide();
+      document.title = 'The Card Box — Reference Guide';
+      showScreen('grading');
+      return;
+    }
 
     if (section === 'completed' && cat) {
       if (rawSetSlug) {
