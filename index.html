@@ -17,6 +17,11 @@
     --gold: #9c7018;
     --card-white: #f6f0e1;
     --shadow: rgba(38, 33, 26, 0.22);
+    --sport-baseball: #7e9868;
+    --sport-basketball: #de7a2c;
+    --sport-comic: #4f9fc4;
+    --sport-football: #6e4429;
+    --sport-hockey: #1a1a1a;
     color-scheme: light;
   }
 
@@ -33,6 +38,11 @@
       --gold: #d9ab4e;
       --card-white: #2e271c;
       --shadow: rgba(0, 0, 0, 0.55);
+      --sport-baseball: #9cc28a;
+      --sport-basketball: #f0964f;
+      --sport-comic: #7fcaea;
+      --sport-football: #b07e52;
+      --sport-hockey: #b8b8b8;
       color-scheme: dark;
     }
   }
@@ -48,6 +58,11 @@
     --gold: #d9ab4e;
     --card-white: #2e271c;
     --shadow: rgba(0, 0, 0, 0.55);
+    --sport-baseball: #9cc28a;
+    --sport-basketball: #f0964f;
+    --sport-comic: #7fcaea;
+    --sport-football: #b07e52;
+    --sport-hockey: #b8b8b8;
     color-scheme: dark;
   }
   :root[data-theme="light"] {
@@ -62,6 +77,11 @@
     --gold: #9c7018;
     --card-white: #f6f0e1;
     --shadow: rgba(38, 33, 26, 0.22);
+    --sport-baseball: #7e9868;
+    --sport-basketball: #de7a2c;
+    --sport-comic: #4f9fc4;
+    --sport-football: #6e4429;
+    --sport-hockey: #1a1a1a;
     color-scheme: light;
   }
 
@@ -176,6 +196,17 @@
   }
   .cat-tile:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); }
   .cat-tile:focus-visible { outline: 2px solid var(--stamp); outline-offset: -2px; }
+  .cat-tile[data-sport="baseball"] { --sport: var(--sport-baseball); }
+  .cat-tile[data-sport="basketball"] { --sport: var(--sport-basketball); }
+  .cat-tile[data-sport="comic"] { --sport: var(--sport-comic); }
+  .cat-tile[data-sport="football"] { --sport: var(--sport-football); }
+  .cat-tile[data-sport="hockey"] { --sport: var(--sport-hockey); }
+  .cat-tile[data-sport] {
+    border-color: var(--sport);
+    background: color-mix(in srgb, var(--sport) 14%, var(--box-raised));
+  }
+  .cat-tile[data-sport]:hover { background: color-mix(in srgb, var(--sport) 26%, var(--box-raised)); }
+  .cat-tile[data-sport] .cat-icon { color: var(--sport); }
   .cat-icon {
     display: block;
     width: 2.35rem;
@@ -1768,7 +1799,7 @@
   function renderMenus() {
     menuCompleted.innerHTML = CATEGORIES.map(cat => {
       const count = sets.filter(s => s.category === cat.key).length;
-      return `<a class="cat-tile" href="#completed/${cat.key}">
+      return `<a class="cat-tile" data-sport="${cat.key}" href="#completed/${cat.key}">
         <span class="cat-icon">${CATEGORY_ICONS[cat.key] || ''}</span>
         <div class="label">${cat.label}</div>
         <div class="value">${count}</div>
@@ -1776,7 +1807,7 @@
     }).join('');
     menuIndividual.innerHTML = CATEGORIES.map(cat => {
       const count = individualCards.filter(c => c.category === cat.key).length;
-      return `<a class="cat-tile" href="#individual/${cat.key}">
+      return `<a class="cat-tile" data-sport="${cat.key}" href="#individual/${cat.key}">
         <span class="cat-icon">${CATEGORY_ICONS[cat.key] || ''}</span>
         <div class="label">${cat.label}</div>
         <div class="value">${count}</div>
