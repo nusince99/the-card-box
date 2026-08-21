@@ -127,6 +127,27 @@
     font-style: italic;
   }
 
+  .total-count {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    text-align: right;
+  }
+  .total-count .label { display: block; margin-bottom: 0.25rem; }
+  .total-count .count-value {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--stamp);
+  }
+  @media (max-width: 640px) {
+    .total-count {
+      position: static;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+  }
+
   main {
     max-width: 72rem;
     margin: 0 auto;
@@ -324,6 +345,10 @@
 </style>
 
 <header class="lid">
+  <div class="total-count">
+    <span class="label">Total Cards</span>
+    <span class="count-value mono" id="total-count-value">0</span>
+  </div>
   <a class="lid-link" href="#">
     <span class="label">Est. 2026 &middot; hobby archive</span>
     <h1 class="display">The Card<span> Box</span></h1>
@@ -990,5 +1015,6 @@
   sortSelect.addEventListener('change', renderList);
   window.addEventListener('hashchange', route);
 
+  document.getElementById('total-count-value').textContent = setCards.length;
   route();
 </script>
