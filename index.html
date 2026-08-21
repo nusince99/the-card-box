@@ -489,6 +489,18 @@
   .checklist-btn:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); border-color: var(--stamp); }
   .checklist-btn:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
 
+  .condition-group-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 2rem 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .condition-group-title:first-child { margin-top: 0; }
+  .condition-group-title .label { font-weight: 400; }
+
   .condition-select {
     font-family: "Space Mono", monospace;
     font-size: 0.78rem;
@@ -659,6 +671,7 @@
     <div class="checklist-toolbar">
       <button type="button" class="checklist-btn" id="select-all-btn">Select All</button>
       <button type="button" class="checklist-btn" id="clear-all-btn">Clear All</button>
+      <button type="button" class="checklist-btn" id="group-condition-btn">Group by Condition</button>
     </div>
     <div id="set-list-area"></div>
   </div>
@@ -1960,6 +1973,7 @@
   let indQuery = '';
   let currentSet = null;
   let currentSetCat = null;
+  let groupByCondition = false;
 
   function decadeOf(year) { return Math.floor(year / 10) * 10; }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -2233,6 +2247,54 @@
     try { localStorage.setItem(conditionKey(set, cardNumber), value); } catch (e) {}
   }
 
+  function tableHeadHtml() {
+    return `
+      <tr>
+        <th class="narrow-col">Card #</th>
+        <th>Player</th>
+        <th>Team</th>
+        <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
+        <th>Status</th>
+        <th class="narrow-col">Collection Checklist</th>
+        <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
+        <th class="narrow-col">Card Location</th>
+      </tr>`;
+  }
+
+  function buildCardRow(set, c) {
+    return `
+      <tr>
+        <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
+        <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
+        <td>${esc(c.team) || '&mdash;'}</td>
+        <td>
+          <select class="condition-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Condition of ${esc(c.player)}">
+            <option value=""${getCardCondition(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+            ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(set, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
+          </select>
+        </td>
+        <td>${c.rookie ? 'Rookie' : 'Active'}</td>
+        <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
+        <td><input type="text" class="cardtype-input" data-cardnum="${esc(c.cardNumber)}" value="${esc(getCardType(set, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
+        <td>
+          <select class="location-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
+            <option value=""${getCardLocation(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+            ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(set, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`;
+  }
+
+  function buildTable(set, cards) {
+    return `
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead>${tableHeadHtml()}</thead>
+          <tbody>${cards.map(c => buildCardRow(set, c)).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
   function renderSetDetail(cat, set) {
     currentSet = set;
     currentSetCat = cat;
@@ -2244,6 +2306,9 @@
     setBackLink.textContent = `← ${completedLabel(cat.label)}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
 
+    const groupBtn = document.getElementById('group-condition-btn');
+    if (groupBtn) groupBtn.textContent = groupByCondition ? 'Show All' : 'Group by Condition';
+
     if (list.length === 0) {
       setListArea.innerHTML = `
         <div class="empty-state">
@@ -2253,47 +2318,21 @@
       return;
     }
 
-    setListArea.innerHTML = `
-      <div class="table-wrap">
-        <table class="list-table">
-          <thead>
-            <tr>
-              <th class="narrow-col">Card #</th>
-              <th>Player</th>
-              <th>Team</th>
-              <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
-              <th>Status</th>
-              <th class="narrow-col">Collection Checklist</th>
-              <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
-              <th class="narrow-col">Card Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${list.map(c => `
-              <tr>
-                <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
-                <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
-                <td>${esc(c.team) || '&mdash;'}</td>
-                <td>
-                  <select class="condition-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Condition of ${esc(c.player)}">
-                    <option value=""${getCardCondition(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
-                    ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(set, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
-                  </select>
-                </td>
-                <td>${c.rookie ? 'Rookie' : 'Active'}</td>
-                <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
-                <td><input type="text" class="cardtype-input" data-cardnum="${esc(c.cardNumber)}" value="${esc(getCardType(set, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
-                <td>
-                  <select class="location-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
-                    <option value=""${getCardLocation(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
-                    ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(set, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
-                  </select>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`;
+    if (groupByCondition) {
+      const order = [...CONDITION_GRADES.map(g => g.value), ''];
+      let html = '';
+      order.forEach(val => {
+        const group = list.filter(c => getCardCondition(set, c.cardNumber) === val);
+        if (group.length === 0) return;
+        const gradeInfo = CONDITION_GRADES.find(g => g.value === val);
+        const label = gradeInfo ? gradeInfo.label : 'Ungraded';
+        html += `<h4 class="condition-group-title">${esc(label)} <span class="label">${group.length} ${group.length === 1 ? 'card' : 'cards'}</span></h4>`;
+        html += buildTable(set, group);
+      });
+      setListArea.innerHTML = html;
+    } else {
+      setListArea.innerHTML = buildTable(set, list);
+    }
 
     setListArea.querySelectorAll('.collect-check').forEach(cb => {
       cb.addEventListener('change', () => {
@@ -2306,6 +2345,7 @@
     setListArea.querySelectorAll('.condition-select').forEach(sel => {
       sel.addEventListener('change', () => {
         setCardCondition(set, sel.dataset.cardnum, sel.value);
+        if (groupByCondition) renderSetDetail(cat, set);
       });
     });
     setListArea.querySelectorAll('.location-select').forEach(sel => {
@@ -2439,6 +2479,7 @@
       if (rawSetSlug) {
         const set = sets.find(s => s.category === cat.key && setSlug(s) === rawSetSlug);
         if (set) {
+          groupByCondition = false;
           renderSetDetail(cat, set);
           showScreen('set');
           return;
@@ -2499,6 +2540,11 @@
     setAllChecked(currentSet, list, false);
     renderSetDetail(currentSetCat, currentSet);
     updateTotalCount();
+  });
+  document.getElementById('group-condition-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    groupByCondition = !groupByCondition;
+    renderSetDetail(currentSetCat, currentSet);
   });
   window.addEventListener('hashchange', route);
 
