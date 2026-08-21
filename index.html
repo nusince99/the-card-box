@@ -184,6 +184,15 @@
     font-family: "Space Mono", monospace;
   }
 
+  .section-block { margin-bottom: 2.75rem; }
+  .section-title {
+    margin: 0 0 1.1rem;
+    font-size: 1.35rem;
+    letter-spacing: 0.01em;
+    padding-bottom: 0.65rem;
+    border-bottom: 3px solid var(--rule);
+  }
+
   /* ---------- Category page ---------- */
   .back-link {
     display: inline-flex;
@@ -353,7 +362,14 @@
 
 <main>
   <div id="screen-home">
-    <div class="menu" id="menu"></div>
+    <div class="section-block">
+      <h2 class="section-title display">Completed Sets</h2>
+      <div class="menu" id="menu-completed"></div>
+    </div>
+    <div class="section-block">
+      <h2 class="section-title display">Individual Cards</h2>
+      <div class="menu" id="menu-individual"></div>
+    </div>
   </div>
 
   <div id="screen-category" hidden>
@@ -386,6 +402,28 @@
     </div>
 
     <div id="set-list-area"></div>
+  </div>
+
+  <div id="screen-individual" hidden>
+    <a class="back-link" href="#">&larr; The Card Box</a>
+    <div class="page-head">
+      <h2 class="display" id="ind-title"></h2>
+      <span class="label" id="ind-count"></span>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="ind-search" placeholder="Search player or team&hellip;" aria-label="Search individual cards" />
+      <select id="ind-sort" aria-label="Sort individual cards">
+        <option value="added">Newest added</option>
+        <option value="year-desc">Year, newest first</option>
+        <option value="year-asc">Year, oldest first</option>
+        <option value="player">Player, A&ndash;Z</option>
+      </select>
+    </div>
+
+    <div class="chips" id="ind-chips"></div>
+
+    <div id="ind-list-area"></div>
   </div>
 </main>
 
@@ -800,6 +838,13 @@
     { category: "hockey", year: 1979, brand: "O-Pee-Chee", player: "Lars-Erik Sjoberg", team: "Winnipeg Jets", cardNumber: "396", rookie: false },
   ];
 
+  // Individual, loose cards not tracked as part of a complete set.
+  // { category, player, team, year, brand, cardNumber, rookie, added }
+  const individualCards = [
+    // example (delete once real cards are added):
+    // { category: "baseball", player: "Ken Griffey Jr.", team: "Mariners", year: 1990, brand: "Score", cardNumber: "1", rookie: false, added: 1 },
+  ];
+
   const CATEGORIES = [
     { key: 'baseball', label: 'Baseball Cards' },
     { key: 'basketball', label: 'Basketball Cards' },
@@ -811,7 +856,9 @@
   const screenHome = document.getElementById('screen-home');
   const screenCategory = document.getElementById('screen-category');
   const screenSet = document.getElementById('screen-set');
-  const menu = document.getElementById('menu');
+  const screenIndividual = document.getElementById('screen-individual');
+  const menuCompleted = document.getElementById('menu-completed');
+  const menuIndividual = document.getElementById('menu-individual');
   const catTitle = document.getElementById('cat-title');
   const catCount = document.getElementById('cat-count');
   const chipsWrap = document.getElementById('chips');
@@ -822,10 +869,19 @@
   const setTitle = document.getElementById('set-title');
   const setCount = document.getElementById('set-count');
   const setListArea = document.getElementById('set-list-area');
+  const indTitle = document.getElementById('ind-title');
+  const indCount = document.getElementById('ind-count');
+  const indChipsWrap = document.getElementById('ind-chips');
+  const indListArea = document.getElementById('ind-list-area');
+  const indSearchInput = document.getElementById('ind-search');
+  const indSortSelect = document.getElementById('ind-sort');
 
   let activeCategory = null;
   let activeDecade = null;
   let query = '';
+  let activeIndCategory = null;
+  let activeIndDecade = null;
+  let indQuery = '';
 
   function decadeOf(year) { return Math.floor(year / 10) * 10; }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -838,10 +894,17 @@
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function setSlug(s) { return `${s.year}-${slugify(s.brand)}`; }
 
-  function renderMenu() {
-    menu.innerHTML = CATEGORIES.map(cat => {
+  function renderMenus() {
+    menuCompleted.innerHTML = CATEGORIES.map(cat => {
       const count = sets.filter(s => s.category === cat.key).length;
-      return `<a class="cat-tile" href="#${cat.key}">
+      return `<a class="cat-tile" href="#completed/${cat.key}">
+        <div class="label">${cat.label}</div>
+        <div class="value">${count}</div>
+      </a>`;
+    }).join('');
+    menuIndividual.innerHTML = CATEGORIES.map(cat => {
+      const count = individualCards.filter(c => c.category === cat.key).length;
+      return `<a class="cat-tile" href="#individual/${cat.key}">
         <div class="label">${cat.label}</div>
         <div class="value">${count}</div>
       </a>`;
@@ -913,7 +976,7 @@
           <tbody>
             ${list.map(s => `
               <tr>
-                <td class="mono">${s.year ? `<a class="year-link" href="#${s.category}/${setSlug(s)}">${displayYear(s)}</a>` : '&mdash;'}</td>
+                <td class="mono">${s.year ? `<a class="year-link" href="#completed/${s.category}/${setSlug(s)}">${displayYear(s)}</a>` : '&mdash;'}</td>
                 <td class="brand-cell">${esc(s.brand) || '&mdash;'}</td>
                 <td class="key-cards-cell">${esc(s.keyCards) || '&mdash;'}</td>
               </tr>
@@ -927,7 +990,7 @@
     const list = setCards.filter(c => c.category === set.category && c.year === set.year && c.brand === set.brand);
     setTitle.textContent = `${displayYear(set)} ${set.brand}`;
     setCount.textContent = list.length + (list.length === 1 ? ' card logged' : ' cards logged');
-    setBackLink.href = `#${cat.key}`;
+    setBackLink.href = `#completed/${cat.key}`;
     setBackLink.textContent = `← ${cat.label}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
 
@@ -965,52 +1028,149 @@
       </div>`;
   }
 
-  function route() {
-    const [rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
-    const cat = CATEGORIES.find(c => c.key === rawCategory);
+  function renderIndChips() {
+    const inCategory = individualCards.filter(c => c.category === activeIndCategory);
+    const decades = [...new Set(inCategory.map(c => decadeOf(c.year)).filter(Boolean))].sort((a, b) => a - b);
+    if (decades.length < 2) { indChipsWrap.innerHTML = ''; return; }
+    indChipsWrap.innerHTML = `<button class="chip${activeIndDecade === null ? ' active' : ''}" data-decade="">All decades</button>` +
+      decades.map(d => `<button class="chip${activeIndDecade === d ? ' active' : ''}" data-decade="${d}">${d}s</button>`).join('');
+    indChipsWrap.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeIndDecade = btn.dataset.decade === '' ? null : Number(btn.dataset.decade);
+        renderIndChips();
+        renderIndList();
+      });
+    });
+  }
 
-    if (cat && rawSetSlug) {
-      const set = sets.find(s => s.category === cat.key && setSlug(s) === rawSetSlug);
-      if (set) {
-        renderSetDetail(cat, set);
-        screenHome.hidden = true;
-        screenCategory.hidden = true;
-        screenSet.hidden = false;
-        window.scrollTo(0, 0);
-        return;
-      }
-      // Unknown set — fall through to the category page instead.
-      location.hash = `#${cat.key}`;
+  function visibleIndividualCards() {
+    let list = individualCards.filter(c => c.category === activeIndCategory);
+    if (activeIndDecade !== null) list = list.filter(c => decadeOf(c.year) === activeIndDecade);
+    if (indQuery) {
+      const q = indQuery.toLowerCase();
+      list = list.filter(c => (c.player || '').toLowerCase().includes(q) || (c.team || '').toLowerCase().includes(q) || (c.brand || '').toLowerCase().includes(q));
+    }
+    const mode = indSortSelect.value;
+    if (mode === 'year-desc') list.sort((a, b) => (b.year || 0) - (a.year || 0));
+    else if (mode === 'year-asc') list.sort((a, b) => (a.year || 0) - (b.year || 0));
+    else if (mode === 'player') list.sort((a, b) => (a.player || '').localeCompare(b.player || ''));
+    else list.sort((a, b) => (b.added || 0) - (a.added || 0));
+    return list;
+  }
+
+  function renderIndList() {
+    const total = individualCards.filter(c => c.category === activeIndCategory).length;
+    const list = visibleIndividualCards();
+    indCount.textContent = total + (total === 1 ? ' card' : ' cards');
+
+    if (total === 0) {
+      indListArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No cards yet</div>
+          <p>Send over a player, team, year, brand, and card number and it'll get slotted in here.</p>
+        </div>`;
+      return;
+    }
+    if (list.length === 0) {
+      indListArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No matches</div>
+          <p>Nothing here fits the current filters.</p>
+        </div>`;
       return;
     }
 
-    if (cat) {
+    indListArea.innerHTML = `
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th class="narrow-col">Card #</th>
+              <th>Player</th>
+              <th>Team</th>
+              <th class="narrow-col">Year</th>
+              <th>Brand</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(c => `
+              <tr>
+                <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
+                <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
+                <td>${esc(c.team) || '&mdash;'}</td>
+                <td class="mono">${c.year || '&mdash;'}</td>
+                <td>${esc(c.brand) || '&mdash;'}</td>
+                <td>${c.rookie ? 'Rookie' : 'Active'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function showScreen(name) {
+    screenHome.hidden = name !== 'home';
+    screenCategory.hidden = name !== 'category';
+    screenSet.hidden = name !== 'set';
+    screenIndividual.hidden = name !== 'individual';
+    window.scrollTo(0, 0);
+  }
+
+  function route() {
+    const [section, rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
+    const cat = CATEGORIES.find(c => c.key === rawCategory);
+
+    if (section === 'completed' && cat) {
+      if (rawSetSlug) {
+        const set = sets.find(s => s.category === cat.key && setSlug(s) === rawSetSlug);
+        if (set) {
+          renderSetDetail(cat, set);
+          showScreen('set');
+          return;
+        }
+        // Unknown set — fall through to the category page instead.
+        location.hash = `#completed/${cat.key}`;
+        return;
+      }
       activeCategory = cat.key;
       activeDecade = null;
       query = '';
       searchInput.value = '';
       sortSelect.value = 'added';
       catTitle.textContent = cat.label;
-      document.title = `The Card Box — ${cat.label}`;
+      document.title = `The Card Box — Completed Sets — ${cat.label}`;
       renderChips();
       renderList();
-      screenHome.hidden = true;
-      screenCategory.hidden = false;
-      screenSet.hidden = true;
-    } else {
-      renderMenu();
-      document.title = 'The Card Box';
-      screenHome.hidden = false;
-      screenCategory.hidden = true;
-      screenSet.hidden = true;
+      showScreen('category');
+      return;
     }
-    window.scrollTo(0, 0);
+
+    if (section === 'individual' && cat) {
+      activeIndCategory = cat.key;
+      activeIndDecade = null;
+      indQuery = '';
+      indSearchInput.value = '';
+      indSortSelect.value = 'added';
+      indTitle.textContent = cat.label;
+      document.title = `The Card Box — Individual Cards — ${cat.label}`;
+      renderIndChips();
+      renderIndList();
+      showScreen('individual');
+      return;
+    }
+
+    renderMenus();
+    document.title = 'The Card Box';
+    showScreen('home');
   }
 
   searchInput.addEventListener('input', () => { query = searchInput.value; renderList(); });
   sortSelect.addEventListener('change', renderList);
+  indSearchInput.addEventListener('input', () => { indQuery = indSearchInput.value; renderIndList(); });
+  indSortSelect.addEventListener('change', renderIndList);
   window.addEventListener('hashchange', route);
 
-  document.getElementById('total-count-value').textContent = setCards.length;
+  document.getElementById('total-count-value').textContent = setCards.length + individualCards.length;
   route();
 </script>
