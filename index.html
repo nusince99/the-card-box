@@ -429,6 +429,51 @@
     vertical-align: middle;
   }
 
+  .collect-check {
+    appearance: none;
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+    background: var(--card-white);
+    cursor: pointer;
+    position: relative;
+    vertical-align: middle;
+  }
+  .collect-check:hover { border-color: var(--stamp); }
+  .collect-check:checked {
+    background: var(--stamp);
+    border-color: var(--stamp);
+  }
+  .collect-check:checked::after {
+    content: "";
+    position: absolute;
+    left: 0.35rem;
+    top: 0.12rem;
+    width: 0.28rem;
+    height: 0.55rem;
+    border: solid var(--card-white);
+    border-width: 0 2px 2px 0;
+    transform: rotate(40deg);
+  }
+  .collect-check:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+
+  .checklist-toolbar { display: flex; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .checklist-btn {
+    font-family: "Space Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.95rem;
+    border-radius: 6px;
+    border: 1px solid var(--rule);
+    background: var(--box-raised);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .checklist-btn:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); border-color: var(--stamp); }
+  .checklist-btn:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+
   .empty-state {
     text-align: center;
     padding: 4rem 1.5rem;
@@ -500,7 +545,11 @@
       <span class="label" id="set-count"></span>
     </div>
 
-    <h3 class="section-title display">Collection Checklist</h3>
+    <h3 class="section-title display">Collection Catalog</h3>
+    <div class="checklist-toolbar">
+      <button type="button" class="checklist-btn" id="select-all-btn">Select All</button>
+      <button type="button" class="checklist-btn" id="clear-all-btn">Clear All</button>
+    </div>
     <div id="set-list-area"></div>
   </div>
 
@@ -1784,6 +1833,8 @@
   let activeIndCategory = null;
   let activeIndDecade = null;
   let indQuery = '';
+  let currentSet = null;
+  let currentSetCat = null;
 
   function decadeOf(year) { return Math.floor(year / 10) * 10; }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -1957,10 +2008,23 @@
       </div>`;
   }
 
+  function checklistKey(set, cardNumber) {
+    return `cardbox-checked:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
+  }
+  function isCardChecked(set, cardNumber) {
+    try { return localStorage.getItem(checklistKey(set, cardNumber)) === '1'; } catch (e) { return false; }
+  }
+  function setCardChecked(set, cardNumber, checked) {
+    try { localStorage.setItem(checklistKey(set, cardNumber), checked ? '1' : '0'); } catch (e) {}
+  }
+
   function renderSetDetail(cat, set) {
+    currentSet = set;
+    currentSetCat = cat;
     const list = setCards.filter(c => c.category === set.category && c.year === set.year && c.brand === set.brand);
+    const checkedCount = list.filter(c => isCardChecked(set, c.cardNumber)).length;
     setTitle.textContent = `${displayYear(set)} ${set.brand}`;
-    setCount.textContent = list.length + (list.length === 1 ? ' card logged' : ' cards logged');
+    setCount.textContent = list.length ? `${checkedCount} of ${list.length} verified` : '0 cards logged';
     setBackLink.href = `#completed/${cat.key}`;
     setBackLink.textContent = `← ${completedLabel(cat.label)}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
@@ -1983,6 +2047,7 @@
               <th>Player</th>
               <th>Team</th>
               <th>Status</th>
+              <th class="narrow-col">Collection Checklist</th>
             </tr>
           </thead>
           <tbody>
@@ -1992,11 +2057,25 @@
                 <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
                 <td>${esc(c.team) || '&mdash;'}</td>
                 <td>${c.rookie ? 'Rookie' : 'Active'}</td>
+                <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>`;
+
+    setListArea.querySelectorAll('.collect-check').forEach(cb => {
+      cb.addEventListener('change', () => {
+        setCardChecked(set, cb.dataset.cardnum, cb.checked);
+        const nowChecked = list.filter(c => isCardChecked(set, c.cardNumber)).length;
+        setCount.textContent = `${nowChecked} of ${list.length} verified`;
+        updateTotalCount();
+      });
+    });
+  }
+
+  function setAllChecked(set, list, checked) {
+    list.forEach(c => setCardChecked(set, c.cardNumber, checked));
   }
 
   function renderIndChips() {
@@ -2088,7 +2167,16 @@
     window.scrollTo(0, 0);
   }
 
+  function updateTotalCount() {
+    const checkedInSets = sets.reduce((sum, s) => {
+      const cards = setCards.filter(c => c.category === s.category && c.year === s.year && c.brand === s.brand);
+      return sum + cards.filter(c => isCardChecked(s, c.cardNumber)).length;
+    }, 0);
+    document.getElementById('total-count-value').textContent = checkedInSets + individualCards.length;
+  }
+
   function route() {
+    updateTotalCount();
     const [section, rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
     const cat = CATEGORIES.find(c => c.key === rawCategory);
 
@@ -2143,8 +2231,21 @@
   sortSelect.addEventListener('change', renderList);
   indSearchInput.addEventListener('input', () => { indQuery = indSearchInput.value; renderIndList(); });
   indSortSelect.addEventListener('change', renderIndList);
+  document.getElementById('select-all-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    const list = setCards.filter(c => c.category === currentSet.category && c.year === currentSet.year && c.brand === currentSet.brand);
+    setAllChecked(currentSet, list, true);
+    renderSetDetail(currentSetCat, currentSet);
+    updateTotalCount();
+  });
+  document.getElementById('clear-all-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    const list = setCards.filter(c => c.category === currentSet.category && c.year === currentSet.year && c.brand === currentSet.brand);
+    setAllChecked(currentSet, list, false);
+    renderSetDetail(currentSetCat, currentSet);
+    updateTotalCount();
+  });
   window.addEventListener('hashchange', route);
 
-  document.getElementById('total-count-value').textContent = setCards.length + individualCards.length;
   route();
 </script>
