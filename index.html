@@ -517,48 +517,56 @@
   .th-link { color: inherit; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 2px; }
   .th-link:hover { color: var(--stamp); }
 
-  .grading-list { display: flex; flex-direction: column; gap: 0.9rem; }
-  .grading-entry {
-    display: flex;
-    gap: 1.1rem;
-    align-items: flex-start;
+  .grading-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .grading-entry, .def-entry {
     background: var(--card-white);
     border: 1px solid var(--rule);
     border-radius: 10px;
-    padding: 1rem 1.25rem;
+    padding: 0.2rem 1.25rem;
   }
+  .grading-entry summary, .def-entry summary {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    padding: 0.85rem 0;
+    cursor: pointer;
+    list-style: none;
+  }
+  .grading-entry summary::-webkit-details-marker,
+  .def-entry summary::-webkit-details-marker { display: none; }
+  .grading-entry summary::after,
+  .def-entry summary::after {
+    content: "+";
+    margin-left: auto;
+    font-family: "Space Mono", monospace;
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+  }
+  .grading-entry[open] summary::after,
+  .def-entry[open] summary::after { content: "\2212"; }
   .grading-entry .grade-num {
     flex-shrink: 0;
     width: 2.4rem;
     font-family: "Space Mono", monospace;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--stamp);
     line-height: 1;
   }
-  .grading-entry .grade-name {
-    margin: 0 0 0.3rem;
-    font-size: 1.02rem;
+  .grading-entry .grade-name, .def-entry .def-term {
+    font-size: 1rem;
     font-weight: 600;
   }
-  .grading-entry .grade-desc {
+  .grading-entry .grade-desc, .def-entry .def-desc {
     margin: 0;
+    padding-bottom: 1rem;
     color: var(--ink-soft);
     font-size: 0.9rem;
     line-height: 1.55;
   }
+  .grading-entry .grade-desc { padding-left: calc(2.4rem + 1.1rem); }
 
   .def-list { display: flex; flex-direction: column; gap: 0.6rem; }
-  .def-entry {
-    background: var(--card-white);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    padding: 0.75rem 1.1rem;
-    font-size: 0.92rem;
-    line-height: 1.55;
-  }
-  .def-entry .def-term { font-weight: 600; color: var(--ink); }
-  .def-entry .def-desc { color: var(--ink-soft); }
 
   .empty-state {
     text-align: center;
@@ -576,7 +584,7 @@
   <div class="total-count">
     <span class="label">Total Cards</span>
     <span class="count-value mono" id="total-count-value">0</span>
-    <a class="grading-link" href="#grading-guide">Grading Guide</a>
+    <a class="grading-link" href="#grading-guide">Reference Guide</a>
   </div>
   <a class="lid-link" href="#">
     <span class="label">Est. 2026 &middot; hobby archive</span>
@@ -669,7 +677,7 @@
     <a class="back-link" href="#">&larr; The Card Box</a>
     <span class="label page-eyebrow">Reference</span>
     <div class="page-head">
-      <h2 class="display">Reference Guide</h2>
+      <h2 class="display">Grading Guide</h2>
     </div>
 
     <h3 class="section-title display">1 to 10 Grading Scale</h3>
@@ -2137,13 +2145,13 @@
   ];
   function renderGradingGuide() {
     document.getElementById('grading-list').innerHTML = GRADING_SCALE.map(g => `
-      <div class="grading-entry">
-        <div class="grade-num mono">${g.grade}</div>
-        <div>
-          <div class="grade-name">${esc(g.name)}</div>
-          <p class="grade-desc">${esc(g.desc)}</p>
-        </div>
-      </div>
+      <details class="grading-entry">
+        <summary>
+          <span class="grade-num mono">${g.grade}</span>
+          <span class="grade-name">${esc(g.name)}</span>
+        </summary>
+        <p class="grade-desc">${esc(g.desc)}</p>
+      </details>
     `).join('');
   }
 
@@ -2163,9 +2171,10 @@
   ];
   function renderCardTypeGuide() {
     document.getElementById('cardtype-list').innerHTML = CARD_TYPE_DEFS.map(t => `
-      <div class="def-entry">
-        <span class="def-term">${esc(t.name)}</span><span class="def-desc"> &mdash; ${esc(t.desc)}</span>
-      </div>
+      <details class="def-entry">
+        <summary><span class="def-term">${esc(t.name)}</span></summary>
+        <p class="def-desc">${esc(t.desc)}</p>
+      </details>
     `).join('');
   }
 
@@ -2386,7 +2395,7 @@
     if (section === 'grading-guide') {
       renderGradingGuide();
       renderCardTypeGuide();
-      document.title = 'The Card Box — Reference Guide';
+      document.title = 'The Card Box — Grading Guide';
       showScreen('grading');
       return;
     }
