@@ -193,6 +193,54 @@
     border-bottom: 3px solid var(--rule);
   }
 
+  /* ---------- Home search ---------- */
+  .global-search { position: relative; margin-bottom: 2.5rem; }
+  .global-search input[type="search"] {
+    width: 100%;
+    padding: 0.85rem 1.1rem;
+    border-radius: 8px;
+    border: 1px solid var(--rule);
+    background: var(--card-white);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+  .global-search input:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
+  #home-search-results {
+    margin-top: 0.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--card-white);
+    overflow: hidden;
+    max-height: 26rem;
+    overflow-y: auto;
+  }
+  .search-group-label {
+    font-family: "Space Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 0.6rem 1rem 0.35rem;
+    background: var(--box-raised);
+  }
+  .search-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.65rem 1rem;
+    text-decoration: none;
+    color: var(--ink);
+    border-bottom: 1px solid var(--rule);
+    flex-wrap: wrap;
+  }
+  .search-result:last-child { border-bottom: none; }
+  .search-result:hover { background: color-mix(in srgb, var(--stamp) 7%, transparent); }
+  .sr-name { font-weight: 600; }
+  .sr-meta { font-size: 0.8rem; color: var(--ink-soft); font-family: "Space Mono", monospace; }
+  .search-empty { padding: 1.25rem 1rem; color: var(--ink-soft); text-align: center; }
+
   /* ---------- Category page ---------- */
   .back-link {
     display: inline-flex;
@@ -362,6 +410,10 @@
 
 <main>
   <div id="screen-home">
+    <div class="global-search">
+      <input type="search" id="home-search" placeholder="Search all players, teams, sets&hellip;" aria-label="Search all cards and sets" />
+      <div id="home-search-results" hidden></div>
+    </div>
     <div class="section-block">
       <h2 class="section-title display">Completed Sets</h2>
       <div class="menu" id="menu-completed"></div>
@@ -912,6 +964,73 @@
     }).join('');
   }
 
+  const homeSearchInput = document.getElementById('home-search');
+  const homeSearchResults = document.getElementById('home-search-results');
+  const RESULT_CAP = 25;
+
+  function catLabelFor(key) {
+    return (CATEGORIES.find(c => c.key === key) || {}).label || key;
+  }
+  // "Baseball Cards" -> "Baseball Card Sets", used only on the Completed Sets side.
+  function completedLabel(label) {
+    return label.replace(/Cards$/, 'Card Sets');
+  }
+
+  function renderHomeSearch(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) { homeSearchResults.innerHTML = ''; homeSearchResults.hidden = true; return; }
+
+    const setCardMatches = setCards.filter(c =>
+      (c.player || '').toLowerCase().includes(q) || (c.team || '').toLowerCase().includes(q)
+    ).slice(0, RESULT_CAP);
+    const setMatches = sets.filter(s =>
+      (s.brand || '').toLowerCase().includes(q) || (s.keyCards || '').toLowerCase().includes(q)
+    );
+    const individualMatches = individualCards.filter(c =>
+      (c.player || '').toLowerCase().includes(q) || (c.team || '').toLowerCase().includes(q) || (c.brand || '').toLowerCase().includes(q)
+    ).slice(0, RESULT_CAP);
+
+    if (setCardMatches.length === 0 && setMatches.length === 0 && individualMatches.length === 0) {
+      homeSearchResults.innerHTML = `<div class="search-empty">No matches for &ldquo;${esc(query)}&rdquo;</div>`;
+      homeSearchResults.hidden = false;
+      return;
+    }
+
+    let html = '';
+
+    if (setCardMatches.length || setMatches.length) {
+      html += `<div class="search-group-label">Completed Sets</div>`;
+      html += setCardMatches.map(c => {
+        const href = `#completed/${c.category}/${setSlug(c)}`;
+        return `<a class="search-result" href="${href}">
+          <span class="sr-name">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</span>
+          <span class="sr-meta">${esc(c.team) ? esc(c.team) + ' &middot; ' : ''}${displayYear(c)} ${esc(c.brand)} &middot; ${catLabelFor(c.category)}</span>
+        </a>`;
+      }).join('');
+      html += setMatches.map(s => {
+        return `<a class="search-result" href="#completed/${s.category}">
+          <span class="sr-name">${displayYear(s)} ${esc(s.brand)}</span>
+          <span class="sr-meta">${catLabelFor(s.category)}${s.keyCards ? ' &middot; ' + esc(s.keyCards) : ''}</span>
+        </a>`;
+      }).join('');
+    }
+
+    if (individualMatches.length) {
+      html += `<div class="search-group-label">Individual Cards</div>`;
+      html += individualMatches.map(c => {
+        return `<a class="search-result" href="#individual/${c.category}">
+          <span class="sr-name">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</span>
+          <span class="sr-meta">${esc(c.team) ? esc(c.team) + ' &middot; ' : ''}${c.year || ''} ${esc(c.brand) || ''} &middot; ${catLabelFor(c.category)}</span>
+        </a>`;
+      }).join('');
+    }
+
+    homeSearchResults.innerHTML = html;
+    homeSearchResults.hidden = false;
+  }
+
+  homeSearchInput.addEventListener('input', () => renderHomeSearch(homeSearchInput.value));
+
   function renderChips() {
     const inCategory = sets.filter(s => s.category === activeCategory);
     const decades = [...new Set(inCategory.map(s => decadeOf(s.year)).filter(Boolean))].sort((a, b) => a - b);
@@ -992,7 +1111,7 @@
     setTitle.textContent = `${displayYear(set)} ${set.brand}`;
     setCount.textContent = list.length + (list.length === 1 ? ' card logged' : ' cards logged');
     setBackLink.href = `#completed/${cat.key}`;
-    setBackLink.textContent = `← ${cat.label}`;
+    setBackLink.textContent = `← ${completedLabel(cat.label)}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
 
     if (list.length === 0) {
@@ -1139,8 +1258,8 @@
       query = '';
       searchInput.value = '';
       sortSelect.value = 'added';
-      catTitle.textContent = cat.label;
-      document.title = `The Card Box — Completed Sets — ${cat.label}`;
+      catTitle.textContent = completedLabel(cat.label);
+      document.title = `The Card Box — Completed Sets — ${completedLabel(cat.label)}`;
       renderChips();
       renderList();
       showScreen('category');
@@ -1162,6 +1281,9 @@
     }
 
     renderMenus();
+    homeSearchInput.value = '';
+    homeSearchResults.innerHTML = '';
+    homeSearchResults.hidden = true;
     document.title = 'The Card Box';
     showScreen('home');
   }
