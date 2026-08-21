@@ -501,6 +501,18 @@
   }
   .condition-select:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
 
+  .location-select {
+    font-family: "Space Mono", monospace;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    background: var(--card-white);
+    color: var(--ink);
+    max-width: 9.5rem;
+  }
+  .location-select:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
+
   .cardtype-input {
     font-family: inherit;
     font-size: 0.85rem;
@@ -2188,6 +2200,17 @@
     try { localStorage.setItem(cardTypeKey(set, cardNumber), value); } catch (e) {}
   }
 
+  const CARD_LOCATIONS = ['In Box', 'Hard Plastic Case'];
+  function cardLocationKey(set, cardNumber) {
+    return `cardbox-location:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
+  }
+  function getCardLocation(set, cardNumber) {
+    try { return localStorage.getItem(cardLocationKey(set, cardNumber)) || ''; } catch (e) { return ''; }
+  }
+  function setCardLocation(set, cardNumber, value) {
+    try { localStorage.setItem(cardLocationKey(set, cardNumber), value); } catch (e) {}
+  }
+
   const CONDITION_GRADES = [
     { value: '10', label: '10 – Gem Mint / Pristine' },
     { value: '9', label: '9 – Mint' },
@@ -2242,6 +2265,7 @@
               <th>Status</th>
               <th class="narrow-col">Collection Checklist</th>
               <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
+              <th class="narrow-col">Card Location</th>
             </tr>
           </thead>
           <tbody>
@@ -2259,6 +2283,12 @@
                 <td>${c.rookie ? 'Rookie' : 'Active'}</td>
                 <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
                 <td><input type="text" class="cardtype-input" data-cardnum="${esc(c.cardNumber)}" value="${esc(getCardType(set, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
+                <td>
+                  <select class="location-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
+                    <option value=""${getCardLocation(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+                    ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(set, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
+                  </select>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -2276,6 +2306,11 @@
     setListArea.querySelectorAll('.condition-select').forEach(sel => {
       sel.addEventListener('change', () => {
         setCardCondition(set, sel.dataset.cardnum, sel.value);
+      });
+    });
+    setListArea.querySelectorAll('.location-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        setCardLocation(set, sel.dataset.cardnum, sel.value);
       });
     });
     setListArea.querySelectorAll('.cardtype-input').forEach(inp => {
