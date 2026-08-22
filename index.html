@@ -765,6 +765,15 @@
   const sets = [
     { category: "hockey", year: 1979, brand: "O-Pee-Chee", keyCards: "Wayne Gretzky RC (#18), Bobby Smith RC (#206), John Tonelli RC (#146), Charlie Simmer RC (#191), Barry Melrose RC (#386)", added: 1 },
     { category: "baseball", year: 1987, brand: "Topps", keyCards: "Barry Bonds RC (#320), Will Clark RC (#420), Mark McGwire RC (#366), Barry Larkin RC (#648), Rafael Palmeiro RC (#634)", added: 2 },
+    { category: "basketball", year: 1989, brand: "Hoops", keyCards: "", added: 3 },
+    { category: "baseball", year: 1984, brand: "Donruss", keyCards: "", added: 4 },
+    { category: "baseball", year: 1985, brand: "Fleer", keyCards: "", added: 5 },
+    { category: "baseball", year: 1984, brand: "Fleer", keyCards: "", added: 6 },
+    { category: "baseball", year: 1984, brand: "Fleer Update", keyCards: "", added: 7 },
+    { category: "hockey", year: 1992, brand: "Bowman", keyCards: "", added: 8 },
+    { category: "baseball", year: 1992, brand: "Bowman", keyCards: "", added: 9 },
+    { category: "football", year: 1992, brand: "Bowman", keyCards: "", added: 10 },
+    { category: "football", year: 1987, brand: "Topps", keyCards: "", added: 11 },
   ];
 
   // The full checklist for a set (optional — only needed for sets you want to break out
@@ -2029,7 +2038,7 @@
   // Hockey sets are conventionally labeled by season (e.g. 1979-80), other sports by single year.
   function displayYear(s) {
     if (!s.year) return '';
-    if (s.category === 'hockey') return `${s.year}-${String((s.year + 1) % 100).padStart(2, '0')}`;
+    if (s.category === 'hockey' || s.category === 'basketball') return `${s.year}-${String((s.year + 1) % 100).padStart(2, '0')}`;
     return String(s.year);
   }
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
