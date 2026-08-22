@@ -630,12 +630,12 @@
     </div>
 
     <div class="toolbar">
-      <input type="search" id="search" placeholder="Search brand, key cards, or any player&hellip;" aria-label="Search sets" />
+      <input type="search" id="search" placeholder="Search manufacturer, key cards, or any player&hellip;" aria-label="Search sets" />
       <select id="sort" aria-label="Sort sets">
         <option value="added">Newest added</option>
         <option value="year-desc">Year, newest first</option>
         <option value="year-asc">Year, oldest first</option>
-        <option value="brand">Brand, A&ndash;Z</option>
+        <option value="brand">Manufacturer, A&ndash;Z</option>
       </select>
     </div>
 
@@ -7036,7 +7036,7 @@
     const inCategory = sets.filter(s => s.category === activeCategory);
     const brands = [...new Set(inCategory.map(s => brandFamily(s.brand)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     if (brands.length < 2) { brandChipsWrap.innerHTML = ''; return; }
-    brandChipsWrap.innerHTML = `<button class="chip${activeBrand === null ? ' active' : ''}" data-brand="">All Brands</button>` +
+    brandChipsWrap.innerHTML = `<button class="chip${activeBrand === null ? ' active' : ''}" data-brand="">All Manufacturers</button>` +
       brands.map(b => `<button class="chip${activeBrand === b ? ' active' : ''}" data-brand="${esc(b)}">${esc(b)}</button>`).join('');
     brandChipsWrap.querySelectorAll('.chip').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -7112,7 +7112,7 @@
           <thead>
             <tr>
               <th class="narrow-col">Year</th>
-              <th class="brand-col">Brand</th>
+              <th class="brand-col">Manufacturer</th>
               <th>Key Cards</th>
               <th class="narrow-col">Quantity</th>
             </tr>
@@ -7358,7 +7358,7 @@
               <th>Player</th>
               <th>Team</th>
               <th class="narrow-col">Year</th>
-              <th>Brand</th>
+              <th>Manufacturer</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -7417,7 +7417,7 @@
           <thead>
             <tr>
               <th class="narrow-col">Year</th>
-              <th>Brand</th>
+              <th>Manufacturer</th>
               <th class="narrow-col">Card #</th>
               <th>Player</th>
               <th>Team</th>
@@ -7464,7 +7464,7 @@
   }
 
   function exportToExcel() {
-    const header = ['Category', 'Year', 'Brand', 'Set Quantity', 'Card #', 'Player', 'Team', 'Rookie', 'Verified', 'Card Location'];
+    const header = ['Category', 'Year', 'Manufacturer', 'Set Quantity', 'Card #', 'Player', 'Team', 'Rookie', 'Verified', 'Card Location'];
     const rows = [header];
     sets.forEach(s => {
       const catLabel = (CATEGORIES.find(c => c.key === s.category) || {}).label || s.category;
@@ -7606,19 +7606,19 @@
   function exportSetsWorkbook() {
     const encoder = new TextEncoder();
 
-    const setsRows = [['Category', 'Year', 'Brand', 'Key Cards', 'Total Cards', 'Verified', 'Quantity Owned']];
+    const setsRows = [['Category', 'Year', 'Manufacturer', 'Key Cards', 'Total Cards', 'Verified', 'Quantity Owned']];
     sets.forEach(s => {
       const cards = setCards.filter(c => c.category === s.category && c.year === s.year && c.brand === s.brand);
       const checked = cards.filter(c => isCardChecked(s, c.cardNumber)).length;
       setsRows.push([catLabelFor(s.category), s.year, s.brand, s.keyCards || '', cards.length, checked, getSetQuantity(s)]);
     });
 
-    const indRows = [['Category', 'Year', 'Brand', 'Card #', 'Player', 'Team', 'Rookie']];
+    const indRows = [['Category', 'Year', 'Manufacturer', 'Card #', 'Player', 'Team', 'Rookie']];
     individualCards.forEach(c => {
       indRows.push([catLabelFor(c.category), c.year || '', c.brand || '', c.cardNumber || '', c.player || '', c.team || '', c.rookie ? 'Yes' : 'No']);
     });
 
-    const notableRows = [['Category', 'Year', 'Brand', 'Card #', 'Player', 'Team', 'Rookie', 'Verified']];
+    const notableRows = [['Category', 'Year', 'Manufacturer', 'Card #', 'Player', 'Team', 'Rookie', 'Verified']];
     setCards.filter(c => getCardLocation(c, c.cardNumber) === 'Notable Card').forEach(c => {
       notableRows.push([catLabelFor(c.category), c.year, c.brand, c.cardNumber, c.player, c.team || '', c.rookie ? 'Yes' : 'No', isCardChecked(c, c.cardNumber) ? 'Yes' : 'No']);
     });
