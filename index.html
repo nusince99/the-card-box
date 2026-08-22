@@ -592,6 +592,7 @@
     <span class="count-value mono" id="total-count-value">0</span>
     <a class="grading-link" href="#grading-guide">Reference Guide</a>
     <button type="button" class="grading-link" id="export-excel-btn">Export to Excel</button>
+    <button type="button" class="grading-link" id="export-sets-btn">Export Sets Overview (Excel)</button>
   </div>
   <a class="lid-link" href="#">
     <span class="label">Est. 2026 &middot; hobby archive</span>
@@ -629,7 +630,7 @@
     </div>
 
     <div class="toolbar">
-      <input type="search" id="search" placeholder="Search brand or key cards&hellip;" aria-label="Search sets" />
+      <input type="search" id="search" placeholder="Search brand, key cards, or any player&hellip;" aria-label="Search sets" />
       <select id="sort" aria-label="Sort sets">
         <option value="added">Newest added</option>
         <option value="year-desc">Year, newest first</option>
@@ -7051,7 +7052,11 @@
     if (activeDecade !== null) list = list.filter(s => decadeOf(s.year) === activeDecade);
     if (query) {
       const q = query.toLowerCase();
-      list = list.filter(s => (s.brand || '').toLowerCase().includes(q) || (s.keyCards || '').toLowerCase().includes(q));
+      list = list.filter(s => {
+        if ((s.brand || '').toLowerCase().includes(q) || (s.keyCards || '').toLowerCase().includes(q)) return true;
+        return setCards.some(c => c.category === s.category && c.year === s.year && c.brand === s.brand &&
+          ((c.player || '').toLowerCase().includes(q) || (c.team || '').toLowerCase().includes(q) || String(c.cardNumber || '').toLowerCase().includes(q)));
+      });
     }
     const mode = sortSelect.value;
     if (mode === 'year-desc') list.sort((a, b) => b.year - a.year);
@@ -7485,6 +7490,164 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+
+  // ---- Minimal .xlsx (multi-sheet) writer — no external library ----
+  const CRC_TABLE = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+  function crc32(bytes) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function buildZip(files, mimeType) {
+    const encoder = new TextEncoder();
+    const parts = [];
+    const centralParts = [];
+    let offset = 0;
+    files.forEach(f => {
+      const nameBytes = encoder.encode(f.name);
+      const data = f.data;
+      const crc = crc32(data);
+      const size = data.length;
+
+      const local = new Uint8Array(30 + nameBytes.length);
+      const dv = new DataView(local.buffer);
+      dv.setUint32(0, 0x04034b50, true);
+      dv.setUint16(4, 20, true);
+      dv.setUint16(6, 0, true);
+      dv.setUint16(8, 0, true);
+      dv.setUint16(10, 0, true);
+      dv.setUint16(12, 0, true);
+      dv.setUint32(14, crc, true);
+      dv.setUint32(18, size, true);
+      dv.setUint32(22, size, true);
+      dv.setUint16(26, nameBytes.length, true);
+      dv.setUint16(28, 0, true);
+      local.set(nameBytes, 30);
+      parts.push(local, data);
+
+      const central = new Uint8Array(46 + nameBytes.length);
+      const cdv = new DataView(central.buffer);
+      cdv.setUint32(0, 0x02014b50, true);
+      cdv.setUint16(4, 20, true);
+      cdv.setUint16(6, 20, true);
+      cdv.setUint16(8, 0, true);
+      cdv.setUint16(10, 0, true);
+      cdv.setUint16(12, 0, true);
+      cdv.setUint16(14, 0, true);
+      cdv.setUint32(16, crc, true);
+      cdv.setUint32(20, size, true);
+      cdv.setUint32(24, size, true);
+      cdv.setUint16(28, nameBytes.length, true);
+      cdv.setUint16(30, 0, true);
+      cdv.setUint16(32, 0, true);
+      cdv.setUint16(34, 0, true);
+      cdv.setUint16(36, 0, true);
+      cdv.setUint32(38, 0, true);
+      cdv.setUint32(42, offset, true);
+      central.set(nameBytes, 46);
+      centralParts.push(central);
+
+      offset += local.length + data.length;
+    });
+
+    const centralSize = centralParts.reduce((s, p) => s + p.length, 0);
+    const centralOffset = offset;
+    const end = new Uint8Array(22);
+    const edv = new DataView(end.buffer);
+    edv.setUint32(0, 0x06054b50, true);
+    edv.setUint16(4, 0, true);
+    edv.setUint16(6, 0, true);
+    edv.setUint16(8, files.length, true);
+    edv.setUint16(10, files.length, true);
+    edv.setUint32(12, centralSize, true);
+    edv.setUint32(16, centralOffset, true);
+    edv.setUint16(20, 0, true);
+
+    return new Blob([...parts, ...centralParts, end], { type: mimeType || 'application/zip' });
+  }
+
+  function xmlEsc(v) {
+    return String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function xlsxColLetter(n) {
+    let s = '';
+    n++;
+    while (n > 0) {
+      const rem = (n - 1) % 26;
+      s = String.fromCharCode(65 + rem) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+  function xlsxSheetXml(rows) {
+    const rowsXml = rows.map((row, ri) => {
+      const cells = row.map((val, ci) => {
+        const ref = xlsxColLetter(ci) + (ri + 1);
+        if (typeof val === 'number' && isFinite(val)) return `<c r="${ref}"><v>${val}</v></c>`;
+        return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(val)}</t></is></c>`;
+      }).join('');
+      return `<row r="${ri + 1}">${cells}</row>`;
+    }).join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rowsXml}</sheetData></worksheet>`;
+  }
+
+  function exportSetsWorkbook() {
+    const encoder = new TextEncoder();
+
+    const setsRows = [['Category', 'Year', 'Brand', 'Key Cards', 'Total Cards', 'Verified', 'Quantity Owned']];
+    sets.forEach(s => {
+      const cards = setCards.filter(c => c.category === s.category && c.year === s.year && c.brand === s.brand);
+      const checked = cards.filter(c => isCardChecked(s, c.cardNumber)).length;
+      setsRows.push([catLabelFor(s.category), s.year, s.brand, s.keyCards || '', cards.length, checked, getSetQuantity(s)]);
+    });
+
+    const indRows = [['Category', 'Year', 'Brand', 'Card #', 'Player', 'Team', 'Rookie']];
+    individualCards.forEach(c => {
+      indRows.push([catLabelFor(c.category), c.year || '', c.brand || '', c.cardNumber || '', c.player || '', c.team || '', c.rookie ? 'Yes' : 'No']);
+    });
+
+    const notableRows = [['Category', 'Year', 'Brand', 'Card #', 'Player', 'Team', 'Rookie', 'Verified']];
+    setCards.filter(c => getCardLocation(c, c.cardNumber) === 'Notable Card').forEach(c => {
+      notableRows.push([catLabelFor(c.category), c.year, c.brand, c.cardNumber, c.player, c.team || '', c.rookie ? 'Yes' : 'No', isCardChecked(c, c.cardNumber) ? 'Yes' : 'No']);
+    });
+
+    const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+    const relsRoot = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Completed Sets" sheetId="1" r:id="rId1"/><sheet name="Individual Cards" sheetId="2" r:id="rId2"/><sheet name="Notable Cards" sheetId="3" r:id="rId3"/></sheets></workbook>`;
+    const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>`;
+
+    const files = [
+      { name: '[Content_Types].xml', data: encoder.encode(contentTypes) },
+      { name: '_rels/.rels', data: encoder.encode(relsRoot) },
+      { name: 'xl/workbook.xml', data: encoder.encode(workbookXml) },
+      { name: 'xl/_rels/workbook.xml.rels', data: encoder.encode(workbookRels) },
+      { name: 'xl/styles.xml', data: encoder.encode(stylesXml) },
+      { name: 'xl/worksheets/sheet1.xml', data: encoder.encode(xlsxSheetXml(setsRows)) },
+      { name: 'xl/worksheets/sheet2.xml', data: encoder.encode(xlsxSheetXml(indRows)) },
+      { name: 'xl/worksheets/sheet3.xml', data: encoder.encode(xlsxSheetXml(notableRows)) },
+    ];
+
+    const blob = buildZip(files, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'the-card-box-sets-overview.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  document.getElementById('export-sets-btn').addEventListener('click', exportSetsWorkbook);
 
   function route() {
     updateTotalCount();
