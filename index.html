@@ -171,6 +171,13 @@
     color: var(--ink-soft);
   }
   .grading-link:hover { color: var(--stamp); }
+  button.grading-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: "Space Mono", monospace;
+  }
   @media (max-width: 640px) {
     .total-count {
       position: static;
@@ -492,30 +499,6 @@
   .checklist-btn:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); border-color: var(--stamp); }
   .checklist-btn:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
 
-  .condition-group-title {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    margin: 2rem 0 0.75rem;
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--ink);
-  }
-  .condition-group-title:first-child { margin-top: 0; }
-  .condition-group-title .label { font-weight: 400; }
-
-  .condition-select {
-    font-family: "Space Mono", monospace;
-    font-size: 0.78rem;
-    padding: 0.35rem 0.5rem;
-    border-radius: 5px;
-    border: 1px solid var(--rule);
-    background: var(--card-white);
-    color: var(--ink);
-    max-width: 11rem;
-  }
-  .condition-select:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
-
   .location-select {
     font-family: "Space Mono", monospace;
     font-size: 0.78rem;
@@ -539,22 +522,6 @@
     width: 4rem;
   }
   .quantity-input:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
-
-  .cardtype-input {
-    font-family: inherit;
-    font-size: 0.85rem;
-    padding: 0.4rem 0.55rem;
-    border-radius: 5px;
-    border: 1px solid var(--rule);
-    background: var(--card-white);
-    color: var(--ink);
-    width: 7rem;
-  }
-  .cardtype-input::placeholder { color: var(--ink-soft); opacity: 0.6; }
-  .cardtype-input:focus-visible { outline: 2px solid var(--stamp); outline-offset: 1px; }
-
-  .th-link { color: inherit; text-decoration: underline; text-decoration-style: dashed; text-underline-offset: 2px; }
-  .th-link:hover { color: var(--stamp); }
 
   .grading-list { display: flex; flex-direction: column; gap: 0.6rem; }
   .grading-entry, .def-entry {
@@ -624,6 +591,7 @@
     <span class="label">Total Cards</span>
     <span class="count-value mono" id="total-count-value">0</span>
     <a class="grading-link" href="#grading-guide">Reference Guide</a>
+    <button type="button" class="grading-link" id="export-excel-btn">Export to Excel</button>
   </div>
   <a class="lid-link" href="#">
     <span class="label">Est. 2026 &middot; hobby archive</span>
@@ -697,29 +665,12 @@
         </div>
       </div>
       <div class="bulk-group">
-        <span class="label">Condition</span>
-        <div class="checklist-toolbar">
-          <button type="button" class="checklist-btn" id="select-all-condition-btn">Select All</button>
-          <button type="button" class="checklist-btn" id="clear-all-condition-btn">Clear All</button>
-        </div>
-      </div>
-      <div class="bulk-group">
-        <span class="label">Card Type</span>
-        <div class="checklist-toolbar">
-          <button type="button" class="checklist-btn" id="select-all-cardtype-btn">Select All</button>
-          <button type="button" class="checklist-btn" id="clear-all-cardtype-btn">Clear All</button>
-        </div>
-      </div>
-      <div class="bulk-group">
         <span class="label">Card Location</span>
         <div class="checklist-toolbar">
           <button type="button" class="checklist-btn" id="select-all-location-btn">Select All</button>
           <button type="button" class="checklist-btn" id="clear-all-location-btn">Clear All</button>
         </div>
       </div>
-    </div>
-    <div class="checklist-toolbar">
-      <button type="button" class="checklist-btn" id="group-condition-btn">Group by Condition</button>
     </div>
     <div id="set-list-area"></div>
   </div>
@@ -6949,7 +6900,6 @@
   let indQuery = '';
   let currentSet = null;
   let currentSetCat = null;
-  let groupByCondition = false;
 
   function decadeOf(year) { return Math.floor(year / 10) * 10; }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -7239,19 +7189,6 @@
     `).join('');
   }
 
-  function cardTypeKey(set, cardNumber) {
-    return `cardbox-cardtype:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
-  }
-  function getCardType(set, cardNumber) {
-    try {
-      const v = localStorage.getItem(cardTypeKey(set, cardNumber));
-      return v === null ? 'Base' : v;
-    } catch (e) { return 'Base'; }
-  }
-  function setCardType(set, cardNumber, value) {
-    try { localStorage.setItem(cardTypeKey(set, cardNumber), value); } catch (e) {}
-  }
-
   const CARD_LOCATIONS = ['In Box', 'Notable Card'];
   function cardLocationKey(set, cardNumber) {
     return `cardbox-location:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
@@ -7266,40 +7203,13 @@
     try { localStorage.setItem(cardLocationKey(set, cardNumber), value); } catch (e) {}
   }
 
-  const CONDITION_GRADES = [
-    { value: '10', label: '10 – Gem Mint / Pristine' },
-    { value: '9', label: '9 – Mint' },
-    { value: '8', label: '8 – Near Mint-Mint (NM-MT)' },
-    { value: '7', label: '7 – Near Mint (NM)' },
-    { value: '6', label: '6 – Excellent-Mint (EX-MT)' },
-    { value: '5', label: '5 – Excellent (EX)' },
-    { value: '4', label: '4 – Very Good-Excellent (VG-EX)' },
-    { value: '3', label: '3 – Very Good (VG)' },
-    { value: '2', label: '2 – Good' },
-    { value: '1', label: '1 – Poor' },
-  ];
-  function conditionKey(set, cardNumber) {
-    return `cardbox-condition:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
-  }
-  function getCardCondition(set, cardNumber) {
-    try {
-      const v = localStorage.getItem(conditionKey(set, cardNumber));
-      return v === null ? '8' : v;
-    } catch (e) { return '8'; }
-  }
-  function setCardCondition(set, cardNumber, value) {
-    try { localStorage.setItem(conditionKey(set, cardNumber), value); } catch (e) {}
-  }
-
   function tableHeadHtml() {
     return `
       <tr>
         <th class="narrow-col">Card #</th>
         <th>Player</th>
         <th>Team</th>
-        <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
         <th class="narrow-col">Collection Checklist</th>
-        <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
         <th class="narrow-col">Card Location</th>
       </tr>`;
   }
@@ -7310,14 +7220,7 @@
         <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
         <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
         <td>${esc(c.team) || '&mdash;'}</td>
-        <td>
-          <select class="condition-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Condition of ${esc(c.player)}">
-            <option value=""${getCardCondition(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
-            ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(set, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
-          </select>
-        </td>
         <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
-        <td><input type="text" class="cardtype-input" data-cardnum="${esc(c.cardNumber)}" value="${esc(getCardType(set, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
         <td>
           <select class="location-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
             <option value=""${getCardLocation(set, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
@@ -7348,9 +7251,6 @@
     setBackLink.textContent = `← ${completedLabel(cat.label)}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
 
-    const groupBtn = document.getElementById('group-condition-btn');
-    if (groupBtn) groupBtn.textContent = groupByCondition ? 'Show All' : 'Group by Condition';
-
     if (list.length === 0) {
       setListArea.innerHTML = `
         <div class="empty-state">
@@ -7360,21 +7260,7 @@
       return;
     }
 
-    if (groupByCondition) {
-      const order = [...CONDITION_GRADES.map(g => g.value), ''];
-      let html = '';
-      order.forEach(val => {
-        const group = list.filter(c => getCardCondition(set, c.cardNumber) === val);
-        if (group.length === 0) return;
-        const gradeInfo = CONDITION_GRADES.find(g => g.value === val);
-        const label = gradeInfo ? gradeInfo.label : 'Ungraded';
-        html += `<h4 class="condition-group-title">${esc(label)} <span class="label">${group.length} ${group.length === 1 ? 'card' : 'cards'}</span></h4>`;
-        html += buildTable(set, group);
-      });
-      setListArea.innerHTML = html;
-    } else {
-      setListArea.innerHTML = buildTable(set, list);
-    }
+    setListArea.innerHTML = buildTable(set, list);
 
     setListArea.querySelectorAll('.collect-check').forEach(cb => {
       cb.addEventListener('change', () => {
@@ -7384,20 +7270,9 @@
         updateTotalCount();
       });
     });
-    setListArea.querySelectorAll('.condition-select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        setCardCondition(set, sel.dataset.cardnum, sel.value);
-        if (groupByCondition) renderSetDetail(cat, set);
-      });
-    });
     setListArea.querySelectorAll('.location-select').forEach(sel => {
       sel.addEventListener('change', () => {
         setCardLocation(set, sel.dataset.cardnum, sel.value);
-      });
-    });
-    setListArea.querySelectorAll('.cardtype-input').forEach(inp => {
-      inp.addEventListener('change', () => {
-        setCardType(set, inp.dataset.cardnum, inp.value);
       });
     });
   }
@@ -7505,13 +7380,6 @@
         <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
         <td>${esc(c.team) || '&mdash;'}</td>
         <td>
-          <select class="condition-select" ${dataAttrs} aria-label="Condition of ${esc(c.player)}">
-            <option value=""${getCardCondition(c, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
-            ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(c, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
-          </select>
-        </td>
-        <td><input type="text" class="cardtype-input" ${dataAttrs} value="${esc(getCardType(c, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
-        <td>
           <select class="location-select" ${dataAttrs} aria-label="Storage location of ${esc(c.player)}">
             <option value=""${getCardLocation(c, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
             ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(c, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
@@ -7545,8 +7413,6 @@
               <th class="narrow-col">Card #</th>
               <th>Player</th>
               <th>Team</th>
-              <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
-              <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
               <th class="narrow-col">Card Location</th>
             </tr>
           </thead>
@@ -7554,18 +7420,6 @@
         </table>
       </div>`;
 
-    notableListArea.querySelectorAll('.condition-select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const setObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand };
-        setCardCondition(setObj, sel.dataset.cardnum, sel.value);
-      });
-    });
-    notableListArea.querySelectorAll('.cardtype-input').forEach(inp => {
-      inp.addEventListener('change', () => {
-        const setObj = { category: inp.dataset.category, year: Number(inp.dataset.year), brand: inp.dataset.brand };
-        setCardType(setObj, inp.dataset.cardnum, inp.value);
-      });
-    });
     notableListArea.querySelectorAll('.location-select').forEach(sel => {
       sel.addEventListener('change', () => {
         const setObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand };
@@ -7596,6 +7450,42 @@
     document.getElementById('total-count-value').textContent = checkedInSets + individualCards.length;
   }
 
+  function csvCell(v) {
+    const s = String(v === undefined || v === null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function exportToExcel() {
+    const header = ['Category', 'Year', 'Brand', 'Set Quantity', 'Card #', 'Player', 'Team', 'Rookie', 'Verified', 'Card Location'];
+    const rows = [header];
+    sets.forEach(s => {
+      const catLabel = (CATEGORIES.find(c => c.key === s.category) || {}).label || s.category;
+      const cards = setCards.filter(c => c.category === s.category && c.year === s.year && c.brand === s.brand);
+      cards.forEach(c => {
+        rows.push([
+          catLabel, s.year, s.brand, getSetQuantity(s),
+          c.cardNumber, c.player, c.team || '', c.rookie ? 'Yes' : 'No',
+          isCardChecked(s, c.cardNumber) ? 'Yes' : 'No', getCardLocation(s, c.cardNumber),
+        ]);
+      });
+    });
+    individualCards.forEach(c => {
+      const catLabel = (CATEGORIES.find(cat => cat.key === c.category) || {}).label || c.category;
+      rows.push([catLabel, c.year || '', c.brand || '', '', c.cardNumber || '', c.player, c.team || '', c.rookie ? 'Yes' : 'No', '', '']);
+    });
+    const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'the-card-box-collection.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+
   function route() {
     updateTotalCount();
     const [section, rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
@@ -7613,7 +7503,6 @@
       if (rawSetSlug) {
         const set = sets.find(s => s.category === cat.key && setSlug(s) === rawSetSlug);
         if (set) {
-          groupByCondition = false;
           renderSetDetail(cat, set);
           showScreen('set');
           return;
@@ -7682,31 +7571,6 @@
     setAllChecked(currentSet, list, false);
     renderSetDetail(currentSetCat, currentSet);
     updateTotalCount();
-  });
-  document.getElementById('group-condition-btn').addEventListener('click', () => {
-    if (!currentSet) return;
-    groupByCondition = !groupByCondition;
-    renderSetDetail(currentSetCat, currentSet);
-  });
-  document.getElementById('select-all-condition-btn').addEventListener('click', () => {
-    if (!currentSet) return;
-    setAllField(currentSet, currentSetCards(), setCardCondition, '8');
-    renderSetDetail(currentSetCat, currentSet);
-  });
-  document.getElementById('clear-all-condition-btn').addEventListener('click', () => {
-    if (!currentSet) return;
-    setAllField(currentSet, currentSetCards(), setCardCondition, '');
-    renderSetDetail(currentSetCat, currentSet);
-  });
-  document.getElementById('select-all-cardtype-btn').addEventListener('click', () => {
-    if (!currentSet) return;
-    setAllField(currentSet, currentSetCards(), setCardType, 'Base');
-    renderSetDetail(currentSetCat, currentSet);
-  });
-  document.getElementById('clear-all-cardtype-btn').addEventListener('click', () => {
-    if (!currentSet) return;
-    setAllField(currentSet, currentSetCards(), setCardType, '');
-    renderSetDetail(currentSetCat, currentSet);
   });
   document.getElementById('select-all-location-btn').addEventListener('click', () => {
     if (!currentSet) return;
