@@ -6912,6 +6912,9 @@
   }
   function slugify(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function setSlug(s) { return `${s.year}-${slugify(s.brand)}`; }
+  // Groups a brand with its "Update"/"Traded" companion set under one Brand chip
+  // (e.g. "Fleer Update" filters alongside "Fleer") without merging their card data.
+  function brandFamily(brand) { return (brand || '').replace(/\s+(Update|Traded)$/i, ''); }
 
   function renderMenus() {
     menuCompleted.innerHTML = CATEGORIES.map(cat => {
@@ -7031,7 +7034,7 @@
 
   function renderBrandChips() {
     const inCategory = sets.filter(s => s.category === activeCategory);
-    const brands = [...new Set(inCategory.map(s => s.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const brands = [...new Set(inCategory.map(s => brandFamily(s.brand)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     if (brands.length < 2) { brandChipsWrap.innerHTML = ''; return; }
     brandChipsWrap.innerHTML = `<button class="chip${activeBrand === null ? ' active' : ''}" data-brand="">All Brands</button>` +
       brands.map(b => `<button class="chip${activeBrand === b ? ' active' : ''}" data-brand="${esc(b)}">${esc(b)}</button>`).join('');
@@ -7048,7 +7051,7 @@
 
   function visibleSets() {
     let list = sets.filter(s => s.category === activeCategory);
-    if (activeBrand !== null) list = list.filter(s => s.brand === activeBrand);
+    if (activeBrand !== null) list = list.filter(s => brandFamily(s.brand) === activeBrand);
     if (activeDecade !== null) list = list.filter(s => decadeOf(s.year) === activeDecade);
     if (query) {
       const q = query.toLowerCase();
