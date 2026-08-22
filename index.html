@@ -473,7 +473,10 @@
   }
   .collect-check:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
 
-  .checklist-toolbar { display: flex; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .checklist-toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .bulk-actions { display: flex; flex-wrap: wrap; gap: 1.5rem 2rem; margin-bottom: 0.5rem; }
+  .bulk-group { display: flex; flex-direction: column; gap: 0.45rem; }
+  .bulk-group .checklist-toolbar { margin-bottom: 0; }
   .checklist-btn {
     font-family: "Space Mono", monospace;
     font-size: 0.72rem;
@@ -631,6 +634,10 @@
       <h2 class="section-title display">Individual Cards</h2>
       <div class="menu" id="menu-individual"></div>
     </div>
+    <div class="section-block">
+      <h2 class="section-title display">Notable Cards</h2>
+      <div class="menu" id="menu-notable"></div>
+    </div>
   </div>
 
   <div id="screen-category" hidden>
@@ -668,9 +675,37 @@
     </div>
 
     <h3 class="section-title display">Collection Catalog</h3>
+    <div class="bulk-actions">
+      <div class="bulk-group">
+        <span class="label">Collection Checklist</span>
+        <div class="checklist-toolbar">
+          <button type="button" class="checklist-btn" id="select-all-btn">Select All</button>
+          <button type="button" class="checklist-btn" id="clear-all-btn">Clear All</button>
+        </div>
+      </div>
+      <div class="bulk-group">
+        <span class="label">Condition</span>
+        <div class="checklist-toolbar">
+          <button type="button" class="checklist-btn" id="select-all-condition-btn">Select All</button>
+          <button type="button" class="checklist-btn" id="clear-all-condition-btn">Clear All</button>
+        </div>
+      </div>
+      <div class="bulk-group">
+        <span class="label">Card Type</span>
+        <div class="checklist-toolbar">
+          <button type="button" class="checklist-btn" id="select-all-cardtype-btn">Select All</button>
+          <button type="button" class="checklist-btn" id="clear-all-cardtype-btn">Clear All</button>
+        </div>
+      </div>
+      <div class="bulk-group">
+        <span class="label">Card Location</span>
+        <div class="checklist-toolbar">
+          <button type="button" class="checklist-btn" id="select-all-location-btn">Select All</button>
+          <button type="button" class="checklist-btn" id="clear-all-location-btn">Clear All</button>
+        </div>
+      </div>
+    </div>
     <div class="checklist-toolbar">
-      <button type="button" class="checklist-btn" id="select-all-btn">Select All</button>
-      <button type="button" class="checklist-btn" id="clear-all-btn">Clear All</button>
       <button type="button" class="checklist-btn" id="group-condition-btn">Group by Condition</button>
     </div>
     <div id="set-list-area"></div>
@@ -710,6 +745,15 @@
 
     <h3 class="section-title display" style="margin-top:2.75rem;">Card Type</h3>
     <div class="def-list" id="cardtype-list"></div>
+  </div>
+
+  <div id="screen-notable" hidden>
+    <a class="back-link" href="#">&larr; The Card Box</a>
+    <div class="page-head">
+      <h2 class="display" id="notable-title"></h2>
+      <span class="label" id="notable-count"></span>
+    </div>
+    <div id="notable-list-area"></div>
   </div>
 </main>
 
@@ -1946,8 +1990,10 @@
   const screenSet = document.getElementById('screen-set');
   const screenIndividual = document.getElementById('screen-individual');
   const screenGrading = document.getElementById('screen-grading');
+  const screenNotable = document.getElementById('screen-notable');
   const menuCompleted = document.getElementById('menu-completed');
   const menuIndividual = document.getElementById('menu-individual');
+  const menuNotable = document.getElementById('menu-notable');
   const catTitle = document.getElementById('cat-title');
   const catCount = document.getElementById('cat-count');
   const chipsWrap = document.getElementById('chips');
@@ -1964,6 +2010,9 @@
   const indListArea = document.getElementById('ind-list-area');
   const indSearchInput = document.getElementById('ind-search');
   const indSortSelect = document.getElementById('ind-sort');
+  const notableTitle = document.getElementById('notable-title');
+  const notableCount = document.getElementById('notable-count');
+  const notableListArea = document.getElementById('notable-list-area');
 
   let activeCategory = null;
   let activeDecade = null;
@@ -2003,6 +2052,18 @@
         <div class="value">${count}</div>
       </a>`;
     }).join('');
+    menuNotable.innerHTML = CATEGORIES.map(cat => {
+      const count = notableCardsForCategory(cat.key).length;
+      return `<a class="cat-tile" data-sport="${cat.key}" href="#notable/${cat.key}">
+        <span class="cat-icon">${CATEGORY_ICONS[cat.key] || ''}</span>
+        <div class="label">${cat.label}</div>
+        <div class="value">${count}</div>
+      </a>`;
+    }).join('');
+  }
+
+  function notableCardsForCategory(catKey) {
+    return setCards.filter(c => c.category === catKey && getCardLocation(c, c.cardNumber) === 'Notable Card');
   }
 
   const homeSearchInput = document.getElementById('home-search');
@@ -2208,18 +2269,24 @@
     return `cardbox-cardtype:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
   }
   function getCardType(set, cardNumber) {
-    try { return localStorage.getItem(cardTypeKey(set, cardNumber)) || ''; } catch (e) { return ''; }
+    try {
+      const v = localStorage.getItem(cardTypeKey(set, cardNumber));
+      return v === null ? 'Base' : v;
+    } catch (e) { return 'Base'; }
   }
   function setCardType(set, cardNumber, value) {
     try { localStorage.setItem(cardTypeKey(set, cardNumber), value); } catch (e) {}
   }
 
-  const CARD_LOCATIONS = ['In Box', 'Hard Plastic Case'];
+  const CARD_LOCATIONS = ['In Box', 'Notable Card'];
   function cardLocationKey(set, cardNumber) {
     return `cardbox-location:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
   }
   function getCardLocation(set, cardNumber) {
-    try { return localStorage.getItem(cardLocationKey(set, cardNumber)) || ''; } catch (e) { return ''; }
+    try {
+      const v = localStorage.getItem(cardLocationKey(set, cardNumber));
+      return v === null ? 'In Box' : v;
+    } catch (e) { return 'In Box'; }
   }
   function setCardLocation(set, cardNumber, value) {
     try { localStorage.setItem(cardLocationKey(set, cardNumber), value); } catch (e) {}
@@ -2241,7 +2308,10 @@
     return `cardbox-condition:${set.category}:${set.year}:${set.brand}:${cardNumber}`;
   }
   function getCardCondition(set, cardNumber) {
-    try { return localStorage.getItem(conditionKey(set, cardNumber)) || ''; } catch (e) { return ''; }
+    try {
+      const v = localStorage.getItem(conditionKey(set, cardNumber));
+      return v === null ? '8' : v;
+    } catch (e) { return '8'; }
   }
   function setCardCondition(set, cardNumber, value) {
     try { localStorage.setItem(conditionKey(set, cardNumber), value); } catch (e) {}
@@ -2254,7 +2324,6 @@
         <th>Player</th>
         <th>Team</th>
         <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
-        <th>Status</th>
         <th class="narrow-col">Collection Checklist</th>
         <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
         <th class="narrow-col">Card Location</th>
@@ -2273,7 +2342,6 @@
             ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(set, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
           </select>
         </td>
-        <td>${c.rookie ? 'Rookie' : 'Active'}</td>
         <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
         <td><input type="text" class="cardtype-input" data-cardnum="${esc(c.cardNumber)}" value="${esc(getCardType(set, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
         <td>
@@ -2364,6 +2432,14 @@
     list.forEach(c => setCardChecked(set, c.cardNumber, checked));
   }
 
+  function setAllField(set, list, setter, value) {
+    list.forEach(c => setter(set, c.cardNumber, value));
+  }
+  function currentSetCards() {
+    if (!currentSet) return [];
+    return setCards.filter(c => c.category === currentSet.category && c.year === currentSet.year && c.brand === currentSet.brand);
+  }
+
   function renderIndChips() {
     const inCategory = individualCards.filter(c => c.category === activeIndCategory);
     const decades = [...new Set(inCategory.map(c => decadeOf(c.year)).filter(Boolean))].sort((a, b) => a - b);
@@ -2445,12 +2521,93 @@
       </div>`;
   }
 
+  function buildNotableRow(c) {
+    const dataAttrs = `data-category="${esc(c.category)}" data-year="${c.year}" data-brand="${esc(c.brand)}" data-cardnum="${esc(c.cardNumber)}"`;
+    return `
+      <tr>
+        <td class="mono">${displayYear(c)}</td>
+        <td class="brand-cell">${esc(c.brand)}</td>
+        <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
+        <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
+        <td>${esc(c.team) || '&mdash;'}</td>
+        <td>
+          <select class="condition-select" ${dataAttrs} aria-label="Condition of ${esc(c.player)}">
+            <option value=""${getCardCondition(c, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+            ${CONDITION_GRADES.map(g => `<option value="${g.value}"${getCardCondition(c, c.cardNumber) === g.value ? ' selected' : ''}>${g.label}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="text" class="cardtype-input" ${dataAttrs} value="${esc(getCardType(c, c.cardNumber))}" placeholder="Base" aria-label="Card type of ${esc(c.player)}"></td>
+        <td>
+          <select class="location-select" ${dataAttrs} aria-label="Storage location of ${esc(c.player)}">
+            <option value=""${getCardLocation(c, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+            ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(c, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`;
+  }
+
+  function renderNotableList(cat) {
+    const cards = notableCardsForCategory(cat.key);
+    notableTitle.textContent = cat.label;
+    notableCount.textContent = cards.length + (cards.length === 1 ? ' notable card' : ' notable cards');
+    document.title = `The Card Box — Notable Cards — ${cat.label}`;
+
+    if (cards.length === 0) {
+      notableListArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No notable cards yet</div>
+          <p>On any Collection page, set a card's Card Location to &ldquo;Notable Card&rdquo; and it'll show up here.</p>
+        </div>`;
+      return;
+    }
+
+    notableListArea.innerHTML = `
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th class="narrow-col">Year</th>
+              <th>Brand</th>
+              <th class="narrow-col">Card #</th>
+              <th>Player</th>
+              <th>Team</th>
+              <th><a class="th-link" href="#grading-guide" title="See what each grade means">Condition</a></th>
+              <th class="narrow-col"><a class="th-link" href="#grading-guide" title="See what each card type means">Card Type</a></th>
+              <th class="narrow-col">Card Location</th>
+            </tr>
+          </thead>
+          <tbody>${cards.map(c => buildNotableRow(c)).join('')}</tbody>
+        </table>
+      </div>`;
+
+    notableListArea.querySelectorAll('.condition-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const setObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand };
+        setCardCondition(setObj, sel.dataset.cardnum, sel.value);
+      });
+    });
+    notableListArea.querySelectorAll('.cardtype-input').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const setObj = { category: inp.dataset.category, year: Number(inp.dataset.year), brand: inp.dataset.brand };
+        setCardType(setObj, inp.dataset.cardnum, inp.value);
+      });
+    });
+    notableListArea.querySelectorAll('.location-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const setObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand };
+        setCardLocation(setObj, sel.dataset.cardnum, sel.value);
+        renderNotableList(cat);
+      });
+    });
+  }
+
   function showScreen(name) {
     screenHome.hidden = name !== 'home';
     screenCategory.hidden = name !== 'category';
     screenSet.hidden = name !== 'set';
     screenIndividual.hidden = name !== 'individual';
     screenGrading.hidden = name !== 'grading';
+    screenNotable.hidden = name !== 'notable';
     window.scrollTo(0, 0);
   }
 
@@ -2515,6 +2672,12 @@
       return;
     }
 
+    if (section === 'notable' && cat) {
+      renderNotableList(cat);
+      showScreen('notable');
+      return;
+    }
+
     renderMenus();
     homeSearchInput.value = '';
     homeSearchResults.innerHTML = '';
@@ -2544,6 +2707,36 @@
   document.getElementById('group-condition-btn').addEventListener('click', () => {
     if (!currentSet) return;
     groupByCondition = !groupByCondition;
+    renderSetDetail(currentSetCat, currentSet);
+  });
+  document.getElementById('select-all-condition-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    setAllField(currentSet, currentSetCards(), setCardCondition, '8');
+    renderSetDetail(currentSetCat, currentSet);
+  });
+  document.getElementById('clear-all-condition-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    setAllField(currentSet, currentSetCards(), setCardCondition, '');
+    renderSetDetail(currentSetCat, currentSet);
+  });
+  document.getElementById('select-all-cardtype-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    setAllField(currentSet, currentSetCards(), setCardType, 'Base');
+    renderSetDetail(currentSetCat, currentSet);
+  });
+  document.getElementById('clear-all-cardtype-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    setAllField(currentSet, currentSetCards(), setCardType, '');
+    renderSetDetail(currentSetCat, currentSet);
+  });
+  document.getElementById('select-all-location-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    setAllField(currentSet, currentSetCards(), setCardLocation, 'In Box');
+    renderSetDetail(currentSetCat, currentSet);
+  });
+  document.getElementById('clear-all-location-btn').addEventListener('click', () => {
+    if (!currentSet) return;
+    setAllField(currentSet, currentSetCards(), setCardLocation, '');
     renderSetDetail(currentSetCat, currentSet);
   });
   window.addEventListener('hashchange', route);
