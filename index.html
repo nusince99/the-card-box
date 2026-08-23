@@ -639,6 +639,7 @@
     <div class="toolbar">
       <input type="search" id="search" placeholder="Search manufacturer, key cards, or any player&hellip;" aria-label="Search sets" />
       <select id="sort" aria-label="Sort sets">
+        <option value="year-brand">Year, Manufacturer A&ndash;Z</option>
         <option value="added">Newest added</option>
         <option value="year-desc">Year, newest first</option>
         <option value="year-asc">Year, oldest first</option>
@@ -7087,7 +7088,8 @@
     if (mode === 'year-desc') list.sort((a, b) => b.year - a.year);
     else if (mode === 'year-asc') list.sort((a, b) => a.year - b.year);
     else if (mode === 'brand') list.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''));
-    else list.sort((a, b) => (b.added || 0) - (a.added || 0));
+    else if (mode === 'added') list.sort((a, b) => (b.added || 0) - (a.added || 0));
+    else list.sort((a, b) => (a.year - b.year) || (a.brand || '').localeCompare(b.brand || ''));
     return list;
   }
 
@@ -7704,7 +7706,7 @@
       activeBrand = null;
       query = '';
       searchInput.value = '';
-      sortSelect.value = 'added';
+      sortSelect.value = 'year-brand';
       catTitle.textContent = completedLabel(cat.label);
       document.title = `The Card Box — Completed Sets — ${completedLabel(cat.label)}`;
       renderBrandChips();
