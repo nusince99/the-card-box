@@ -240,6 +240,13 @@
     color: var(--ink);
     font-family: "Space Mono", monospace;
   }
+  .cat-tile .cat-subvalue {
+    margin-top: 0.3rem;
+    font-size: 0.68rem;
+    font-family: "Space Mono", monospace;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+  }
 
   .section-block { margin-bottom: 2.75rem; }
   .section-title {
@@ -741,6 +748,19 @@
     { category: "football", year: 1987, brand: "Topps", keyCards: "Jim Kelly RC (#362), Jerry Rice (#115), Dan Marino (#6), John Elway (#31), Joe Montana (#112)", added: 11 },
     { category: "comic", year: 1990, brand: "Marvel Universe", keyCards: "Spider-Man (#2), Wolverine (#10), Punisher (#47), Venom (#73), Silver Surfer (#32)", added: 12 },
     { category: "comic", year: 1991, brand: "Marvel Universe", keyCards: "Spider-Man (#1), Wolverine (#50), Venom (#58), Cable (#15), Ghost Rider (#39)", added: 13 },
+    { category: "baseball", year: 1988, brand: "Topps", keyCards: "", added: 14 },
+    { category: "baseball", year: 1988, brand: "Topps Traded", keyCards: "", added: 15 },
+    { category: "baseball", year: 1987, brand: "Topps Traded", keyCards: "", added: 16 },
+    { category: "baseball", year: 1989, brand: "Topps", keyCards: "", added: 17 },
+    { category: "baseball", year: 1989, brand: "Topps Traded", keyCards: "", added: 18 },
+    { category: "baseball", year: 1980, brand: "Topps", keyCards: "", added: 19 },
+    { category: "baseball", year: 1981, brand: "Topps", keyCards: "", added: 20 },
+    { category: "baseball", year: 1981, brand: "Topps Traded", keyCards: "", added: 21 },
+    { category: "baseball", year: 1983, brand: "Fleer", keyCards: "", added: 22 },
+    { category: "baseball", year: 1988, brand: "Fleer", keyCards: "", added: 23 },
+    { category: "baseball", year: 1989, brand: "Upper Deck", keyCards: "", added: 24 },
+    { category: "baseball", year: 1990, brand: "Upper Deck", keyCards: "", added: 25 },
+    { category: "baseball", year: 1988, brand: "Score", keyCards: "", added: 26 },
   ];
 
   // The full checklist for a set (optional — only needed for sets you want to break out
@@ -6919,10 +6939,12 @@
   function renderMenus() {
     menuCompleted.innerHTML = CATEGORIES.map(cat => {
       const count = sets.filter(s => s.category === cat.key).length;
+      const cardCount = setCards.filter(c => c.category === cat.key).length;
       return `<a class="cat-tile" data-sport="${cat.key}" href="#completed/${cat.key}">
         <span class="cat-icon">${CATEGORY_ICONS[cat.key] || ''}</span>
         <div class="label">${cat.label}</div>
         <div class="value">${count}</div>
+        <div class="cat-subvalue">${cardCount.toLocaleString()} ${cardCount === 1 ? 'card' : 'cards'}</div>
       </a>`;
     }).join('');
     menuIndividual.innerHTML = CATEGORIES.map(cat => {
