@@ -649,6 +649,7 @@
 
     <div class="chips" id="brand-chips"></div>
     <div class="chips" id="chips"></div>
+    <div class="chips" id="year-chips"></div>
 
     <div id="list-area"></div>
   </div>
@@ -14081,6 +14082,7 @@
   const catCount = document.getElementById('cat-count');
   const chipsWrap = document.getElementById('chips');
   const brandChipsWrap = document.getElementById('brand-chips');
+  const yearChipsWrap = document.getElementById('year-chips');
   const listArea = document.getElementById('list-area');
   const searchInput = document.getElementById('search');
   const sortSelect = document.getElementById('sort');
@@ -14103,6 +14105,7 @@
   let activeCategory = null;
   let activeDecade = null;
   let activeBrand = null;
+  let activeYear = null;
   let query = '';
   let activeIndCategory = null;
   let activeIndDecade = null;
@@ -14238,7 +14241,25 @@
     chipsWrap.querySelectorAll('.chip').forEach(btn => {
       btn.addEventListener('click', () => {
         activeDecade = btn.dataset.decade === '' ? null : Number(btn.dataset.decade);
+        activeYear = null;
         renderChips();
+        renderYearChips();
+        renderList();
+      });
+    });
+  }
+
+  function renderYearChips() {
+    let inScope = sets.filter(s => s.category === activeCategory && (activeBrand === null || s.brand === activeBrand));
+    if (activeDecade !== null) inScope = inScope.filter(s => decadeOf(s.year) === activeDecade);
+    const years = [...new Set(inScope.map(s => s.year).filter(Boolean))].sort((a, b) => a - b);
+    if (years.length < 2) { yearChipsWrap.innerHTML = ''; return; }
+    yearChipsWrap.innerHTML = `<button class="chip${activeYear === null ? ' active' : ''}" data-year="">All years</button>` +
+      years.map(y => `<button class="chip${activeYear === y ? ' active' : ''}" data-year="${y}">${y}</button>`).join('');
+    yearChipsWrap.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeYear = btn.dataset.year === '' ? null : Number(btn.dataset.year);
+        renderYearChips();
         renderList();
       });
     });
@@ -14254,8 +14275,10 @@
       btn.addEventListener('click', () => {
         activeBrand = btn.dataset.brand === '' ? null : btn.dataset.brand;
         activeDecade = null;
+        activeYear = null;
         renderBrandChips();
         renderChips();
+        renderYearChips();
         renderList();
       });
     });
@@ -14265,6 +14288,7 @@
     let list = sets.filter(s => s.category === activeCategory);
     if (activeBrand !== null) list = list.filter(s => brandFamily(s.brand) === activeBrand);
     if (activeDecade !== null) list = list.filter(s => decadeOf(s.year) === activeDecade);
+    if (activeYear !== null) list = list.filter(s => s.year === activeYear);
     if (query) {
       const q = query.toLowerCase();
       list = list.filter(s => {
@@ -14979,6 +15003,7 @@
       activeCategory = cat.key;
       activeDecade = null;
       activeBrand = null;
+      activeYear = null;
       query = '';
       searchInput.value = '';
       sortSelect.value = 'year-brand';
@@ -14986,6 +15011,7 @@
       document.title = `The Card Box — Completed Sets — ${completedLabel(cat.label)}`;
       renderBrandChips();
       renderChips();
+      renderYearChips();
       renderList();
       showScreen('category');
       return;
