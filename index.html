@@ -691,6 +691,9 @@
     </div>
     <div class="toolbar">
       <input type="search" id="set-search" placeholder="Search this set&rsquo;s players&hellip;" aria-label="Search players in this set" />
+      <select id="set-team-filter" aria-label="Filter by team">
+        <option value="">All Teams</option>
+      </select>
     </div>
     <div class="chips" id="set-location-chips"></div>
     <div id="set-list-area"></div>
@@ -22380,6 +22383,7 @@
   const setCount = document.getElementById('set-count');
   const setListArea = document.getElementById('set-list-area');
   const setSearchInput = document.getElementById('set-search');
+  const setTeamFilterSelect = document.getElementById('set-team-filter');
   const setLocationChipsWrap = document.getElementById('set-location-chips');
   const indTitle = document.getElementById('ind-title');
   const indCount = document.getElementById('ind-count');
@@ -22406,6 +22410,7 @@
   let currentSet = null;
   let currentSetCat = null;
   let setDetailQuery = '';
+  let setTeamFilter = null;
   let setLocationFilter = null;
 
   function decadeOf(year) { return Math.floor(year / 10) * 10; }
@@ -22799,6 +22804,11 @@
     try { localStorage.setItem(cardLocationKey(set, cardNumber), value); } catch (e) {}
   }
 
+  function teamLabel(c) {
+    if ((c.player || '').toLowerCase().includes('checklist')) return 'Checklist';
+    return (c.team && c.team.trim()) ? c.team : 'Highlight';
+  }
+
   function tableHeadHtml() {
     return `
       <tr>
@@ -22815,7 +22825,7 @@
       <tr>
         <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
         <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
-        <td>${esc(c.team) || '&mdash;'}</td>
+        <td>${esc(teamLabel(c))}</td>
         <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
         <td>
           <select class="location-select" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
@@ -22850,6 +22860,13 @@
     });
   }
 
+  function renderSetTeamFilter(list) {
+    const teams = [...new Set(list.map(c => teamLabel(c)))].sort((a, b) => a.localeCompare(b));
+    setTeamFilterSelect.innerHTML = `<option value="">All Teams</option>` +
+      teams.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    setTeamFilterSelect.value = setTeamFilter || '';
+  }
+
   function renderSetDetail(cat, set) {
     currentSet = set;
     currentSetCat = cat;
@@ -22862,6 +22879,7 @@
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
 
     renderSetLocationChips();
+    renderSetTeamFilter(list);
 
     if (list.length === 0) {
       setListArea.innerHTML = `
@@ -22881,6 +22899,9 @@
       visibleList = visibleList.filter(c => c.rookie);
     } else if (setLocationFilter !== null) {
       visibleList = visibleList.filter(c => getCardLocation(set, c.cardNumber) === setLocationFilter);
+    }
+    if (setTeamFilter) {
+      visibleList = visibleList.filter(c => teamLabel(c) === setTeamFilter);
     }
 
     if (visibleList.length === 0) {
@@ -23333,6 +23354,7 @@
         if (set) {
           setDetailQuery = '';
           setLocationFilter = null;
+          setTeamFilter = null;
           setSearchInput.value = '';
           renderSetDetail(cat, set);
           showScreen('set');
@@ -23394,6 +23416,10 @@
   searchInput.addEventListener('input', () => { query = searchInput.value; renderList(); });
   setSearchInput.addEventListener('input', () => {
     setDetailQuery = setSearchInput.value;
+    if (currentSet) renderSetDetail(currentSetCat, currentSet);
+  });
+  setTeamFilterSelect.addEventListener('change', () => {
+    setTeamFilter = setTeamFilterSelect.value || null;
     if (currentSet) renderSetDetail(currentSetCat, currentSet);
   });
   sortSelect.addEventListener('change', renderList);
