@@ -22804,9 +22804,34 @@
     try { localStorage.setItem(cardLocationKey(set, cardNumber), value); } catch (e) {}
   }
 
+  // Nicknames as they appear inside blank-team card titles ("Braves Leaders", "A's Future Stars (...)")
+  // mapped to the full franchise name used elsewhere in the data, so those cards can show a real
+  // team instead of just "Highlight". Baseball-only — the other categories' blank-team cards
+  // (league leaders across multiple teams, comic characters, etc.) don't reference a single team.
+  const BASEBALL_TEAM_NICKNAMES = {
+    'braves': 'Atlanta Braves', 'orioles': 'Baltimore Orioles', 'red sox': 'Boston Red Sox',
+    'angels': 'California Angels', 'cubs': 'Chicago Cubs', 'white sox': 'Chicago White Sox',
+    'reds': 'Cincinnati Reds', 'indians': 'Cleveland Indians', 'rockies': 'Colorado Rockies',
+    'tigers': 'Detroit Tigers', 'marlins': 'Florida Marlins', 'astros': 'Houston Astros',
+    'royals': 'Kansas City Royals', 'dodgers': 'Los Angeles Dodgers', 'brewers': 'Milwaukee Brewers',
+    'twins': 'Minnesota Twins', 'expos': 'Montreal Expos', 'mets': 'New York Mets',
+    'yankees': 'New York Yankees', "a's": 'Oakland Athletics', 'athletics': 'Oakland Athletics',
+    'phillies': 'Philadelphia Phillies', 'pirates': 'Pittsburgh Pirates', 'padres': 'San Diego Padres',
+    'giants': 'San Francisco Giants', 'mariners': 'Seattle Mariners', 'cardinals': 'St. Louis Cardinals',
+    'rangers': 'Texas Rangers', 'blue jays': 'Toronto Blue Jays',
+  };
+  function inferTeamFromTitle(player, category) {
+    if (category !== 'baseball') return null;
+    for (const [nick, full] of Object.entries(BASEBALL_TEAM_NICKNAMES)) {
+      const re = new RegExp('\\b' + nick.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+      if (re.test(player || '')) return full;
+    }
+    return null;
+  }
   function teamLabel(c) {
     if ((c.player || '').toLowerCase().includes('checklist')) return 'Checklist';
-    return (c.team && c.team.trim()) ? c.team : 'Highlight';
+    if (c.team && c.team.trim()) return c.team;
+    return inferTeamFromTitle(c.player, c.category) || 'Highlight';
   }
 
   function tableHeadHtml() {
