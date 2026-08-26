@@ -644,6 +644,7 @@
         <option value="year-desc">Year, newest first</option>
         <option value="year-asc">Year, oldest first</option>
         <option value="brand">Manufacturer, A&ndash;Z</option>
+        <option value="brand-year">Manufacturer, Year, A&ndash;Z</option>
       </select>
     </div>
 
@@ -22572,6 +22573,7 @@
     if (mode === 'year-desc') list.sort((a, b) => b.year - a.year);
     else if (mode === 'year-asc') list.sort((a, b) => a.year - b.year);
     else if (mode === 'brand') list.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''));
+    else if (mode === 'brand-year') list.sort((a, b) => (a.brand || '').localeCompare(b.brand || '') || (a.year - b.year));
     else if (mode === 'added') list.sort((a, b) => (b.added || 0) - (a.added || 0));
     else list.sort((a, b) => (a.year - b.year) || (a.brand || '').localeCompare(b.brand || ''));
     return list;
@@ -22641,6 +22643,7 @@
         <table class="list-table">
           <thead>
             <tr>
+              <th class="narrow-col">#</th>
               <th class="narrow-col">Year</th>
               <th class="brand-col">Manufacturer</th>
               <th class="narrow-col">Type</th>
@@ -22650,8 +22653,9 @@
             </tr>
           </thead>
           <tbody>
-            ${list.map(s => `
+            ${list.map((s, i) => `
               <tr>
+                <td class="mono">${i + 1}</td>
                 <td class="mono">${s.year ? `<a class="year-link" href="#completed/${s.category}/${setSlug(s)}">${displayYear(s)}</a>` : '&mdash;'}</td>
                 <td class="brand-cell">${esc(s.brand) || '&mdash;'}</td>
                 <td>
