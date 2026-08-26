@@ -22398,7 +22398,7 @@
   function setSlug(s) { return `${s.year}-${slugify(s.brand)}`; }
   // Groups a brand with its "Update"/"Traded" companion set under one Brand chip
   // (e.g. "Fleer Update" filters alongside "Fleer") without merging their card data.
-  function brandFamily(brand) { return (brand || '').replace(/\s+(Update|Traded)$/i, ''); }
+  function brandFamily(brand) { return (brand || '').replace(/\s+(Rookie & Traded|Update|Traded|Rookies)$/i, ''); }
 
   function renderMenus() {
     menuCompleted.innerHTML = CATEGORIES.map(cat => {
