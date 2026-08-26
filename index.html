@@ -395,16 +395,16 @@
     letter-spacing: 0.05em;
     padding: 0.35rem 0.75rem;
     border-radius: 3px;
-    border: 1px dashed var(--rule);
+    border: 1px solid var(--button-accent);
     background: var(--box-raised);
-    color: var(--ink-soft);
+    color: var(--button-accent);
     cursor: pointer;
     transform: rotate(-0.6deg);
   }
   .chip:nth-child(even) { transform: rotate(0.5deg); }
   .chip.active {
-    background: var(--button-accent);
-    border-color: var(--button-accent);
+    background: var(--stamp);
+    border-color: var(--stamp);
     color: var(--card-white);
   }
   .chip:focus-visible { outline: 2px solid var(--button-accent); outline-offset: 2px; }
