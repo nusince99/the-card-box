@@ -15,6 +15,7 @@
     --stamp: #a3402a;
     --stamp-strong: #7f2f1e;
     --gold: #9c7018;
+    --button-accent: #3454a3;
     --card-white: #fafafa;
     --shadow: rgba(17, 24, 28, 0.2);
     --sport-baseball: #7e9868;
@@ -36,6 +37,7 @@
       --stamp: #d16b4c;
       --stamp-strong: #e08466;
       --gold: #d9ab4e;
+      --button-accent: #6f8fe0;
       --card-white: #2e271c;
       --shadow: rgba(0, 0, 0, 0.55);
       --sport-baseball: #9cc28a;
@@ -56,6 +58,7 @@
     --stamp: #d16b4c;
     --stamp-strong: #e08466;
     --gold: #d9ab4e;
+    --button-accent: #6f8fe0;
     --card-white: #2e271c;
     --shadow: rgba(0, 0, 0, 0.55);
     --sport-baseball: #9cc28a;
@@ -75,6 +78,7 @@
     --stamp: #a3402a;
     --stamp-strong: #7f2f1e;
     --gold: #9c7018;
+    --button-accent: #3454a3;
     --card-white: #fafafa;
     --shadow: rgba(17, 24, 28, 0.2);
     --sport-baseball: #7e9868;
@@ -178,6 +182,7 @@
     cursor: pointer;
     font-family: "Space Mono", monospace;
   }
+  button.grading-link:hover { color: var(--button-accent); }
   @media (max-width: 640px) {
     .total-count {
       position: static;
@@ -219,6 +224,7 @@
   .cat-tile[data-sport="comic"] { --sport: var(--sport-comic); }
   .cat-tile[data-sport="football"] { --sport: var(--sport-football); }
   .cat-tile[data-sport="hockey"] { --sport: var(--sport-hockey); }
+  .cat-tile[data-sport="all"] { --sport: var(--gold); }
   .cat-tile[data-sport] {
     border-color: var(--sport);
     background: color-mix(in srgb, var(--sport) 14%, var(--box-raised));
@@ -397,11 +403,11 @@
   }
   .chip:nth-child(even) { transform: rotate(0.5deg); }
   .chip.active {
-    background: var(--stamp);
-    border-color: var(--stamp);
+    background: var(--button-accent);
+    border-color: var(--button-accent);
     color: var(--card-white);
   }
-  .chip:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+  .chip:focus-visible { outline: 2px solid var(--button-accent); outline-offset: 2px; }
 
   /* ---------- List table ---------- */
   .table-wrap {
@@ -503,8 +509,8 @@
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
   }
-  .checklist-btn:hover { background: color-mix(in srgb, var(--stamp) 14%, var(--box-raised)); border-color: var(--stamp); }
-  .checklist-btn:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+  .checklist-btn:hover { background: color-mix(in srgb, var(--button-accent) 14%, var(--box-raised)); border-color: var(--button-accent); }
+  .checklist-btn:focus-visible { outline: 2px solid var(--button-accent); outline-offset: 2px; }
 
   .location-select {
     font-family: "Space Mono", monospace;
@@ -22339,6 +22345,7 @@
     comic: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12c5-2 11-2 16 1 5-3 11-3 16-1v25c-5-2-11-2-16 1-5-3-11-3-16-1z" stroke-width="2"/><path d="M24 13v25" stroke-width="1.3"/><path d="M31 19l3-3 1 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" stroke-width="1.1"/></svg>`,
     football: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M24 6c10 4 10 32 0 36-10-4-10-32 0-36z" stroke-width="2"/><path d="M24 12v24" stroke-width="1.4"/><path d="M19 17h10M19 24h10M19 31h10" stroke-width="1.1"/></svg>`,
     hockey: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="24" cy="20" rx="16" ry="7" stroke-width="2"/><path d="M8 20v6c0 4 7 7 16 7s16-3 16-7v-6" stroke-width="2"/></svg>`,
+    all: `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6l5.2 11.8L42 19.2l-9.2 8.6 2.4 12.4L24 34l-11.2 6.2 2.4-12.4L6 19.2l12.8-1.4z" stroke-width="2"/></svg>`,
   };
 
   const screenHome = document.getElementById('screen-home');
@@ -22421,7 +22428,7 @@
       </a>`;
     }).join('');
     let notableTotal = 0;
-    menuNotable.innerHTML = CATEGORIES.map(cat => {
+    const notableTiles = CATEGORIES.map(cat => {
       const count = notableCardsForCategory(cat.key).length;
       notableTotal += count;
       return `<a class="cat-tile" data-sport="${cat.key}" href="#notable/${cat.key}">
@@ -22430,10 +22437,17 @@
         <div class="value">${count}</div>
       </a>`;
     }).join('');
+    const allTile = `<a class="cat-tile" data-sport="all" href="#notable/all">
+        <span class="cat-icon">${CATEGORY_ICONS.all}</span>
+        <div class="label">All Sports</div>
+        <div class="value">${notableTotal}</div>
+      </a>`;
+    menuNotable.innerHTML = allTile + notableTiles;
     document.getElementById('notable-home-count').textContent = notableTotal + (notableTotal === 1 ? ' card' : ' cards');
   }
 
   function notableCardsForCategory(catKey) {
+    if (catKey === 'all') return setCards.filter(c => getCardLocation(c, c.cardNumber) === 'Notable Card');
     return setCards.filter(c => c.category === catKey && getCardLocation(c, c.cardNumber) === 'Notable Card');
   }
 
@@ -22975,10 +22989,11 @@
       </div>`;
   }
 
-  function buildNotableRow(c) {
+  function buildNotableRow(c, showCategory) {
     const dataAttrs = `data-category="${esc(c.category)}" data-year="${c.year}" data-brand="${esc(c.brand)}" data-cardnum="${esc(c.cardNumber)}"`;
     return `
       <tr>
+        ${showCategory ? `<td>${esc(catLabelFor(c.category))}</td>` : ''}
         <td class="mono">${displayYear(c)}</td>
         <td class="brand-cell">${esc(c.brand)}</td>
         <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
@@ -22995,6 +23010,7 @@
 
   function renderNotableList(cat) {
     const cards = notableCardsForCategory(cat.key);
+    const showCategory = cat.key === 'all';
     notableTitle.textContent = cat.label;
     notableCount.textContent = cards.length + (cards.length === 1 ? ' notable card' : ' notable cards');
     document.title = `The Card Box — Notable Cards — ${cat.label}`;
@@ -23013,6 +23029,7 @@
         <table class="list-table">
           <thead>
             <tr>
+              ${showCategory ? '<th>Category</th>' : ''}
               <th class="narrow-col">Year</th>
               <th>Manufacturer</th>
               <th class="narrow-col">Card #</th>
@@ -23021,7 +23038,7 @@
               <th class="narrow-col">Card Location</th>
             </tr>
           </thead>
-          <tbody>${cards.map(c => buildNotableRow(c)).join('')}</tbody>
+          <tbody>${cards.map(c => buildNotableRow(c, showCategory)).join('')}</tbody>
         </table>
       </div>`;
 
@@ -23252,7 +23269,9 @@
   function route() {
     updateTotalCount();
     const [section, rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
-    const cat = CATEGORIES.find(c => c.key === rawCategory);
+    const cat = (section === 'notable' && rawCategory === 'all')
+      ? { key: 'all', label: 'All Sports' }
+      : CATEGORIES.find(c => c.key === rawCategory);
 
     if (section === 'grading-guide') {
       renderGradingGuide();
