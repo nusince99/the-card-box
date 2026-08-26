@@ -738,6 +738,16 @@
       <h2 class="display" id="notable-title"></h2>
       <span class="label" id="notable-count"></span>
     </div>
+    <div class="toolbar">
+      <input type="search" id="notable-search" placeholder="Search player, team, or manufacturer&hellip;" aria-label="Search notable cards" />
+      <select id="notable-sort" aria-label="Sort notable cards">
+        <option value="year-desc">Year, newest first</option>
+        <option value="year-asc">Year, oldest first</option>
+        <option value="player">Player A&ndash;Z</option>
+        <option value="brand">Manufacturer A&ndash;Z</option>
+        <option value="team">Team A&ndash;Z</option>
+      </select>
+    </div>
     <div id="notable-list-area"></div>
   </div>
 </main>
@@ -22380,6 +22390,10 @@
   const notableTitle = document.getElementById('notable-title');
   const notableCount = document.getElementById('notable-count');
   const notableListArea = document.getElementById('notable-list-area');
+  const notableSearchInput = document.getElementById('notable-search');
+  const notableSortSelect = document.getElementById('notable-sort');
+  let notableQuery = '';
+  let currentNotableCat = null;
 
   let activeCategory = null;
   let activeDecade = null;
@@ -22989,10 +23003,11 @@
       </div>`;
   }
 
-  function buildNotableRow(c, showCategory) {
+  function buildNotableRow(c, i, showCategory) {
     const dataAttrs = `data-category="${esc(c.category)}" data-year="${c.year}" data-brand="${esc(c.brand)}" data-cardnum="${esc(c.cardNumber)}"`;
     return `
       <tr>
+        <td class="mono">${i + 1}</td>
         ${showCategory ? `<td>${esc(catLabelFor(c.category))}</td>` : ''}
         <td class="mono">${displayYear(c)}</td>
         <td class="brand-cell">${esc(c.brand)}</td>
@@ -23008,18 +23023,48 @@
       </tr>`;
   }
 
+  function visibleNotableCards(cat) {
+    let cards = notableCardsForCategory(cat.key);
+    if (notableQuery) {
+      const q = notableQuery.toLowerCase();
+      cards = cards.filter(c =>
+        (c.player || '').toLowerCase().includes(q) ||
+        (c.team || '').toLowerCase().includes(q) ||
+        (c.brand || '').toLowerCase().includes(q) ||
+        (cat.key === 'all' && catLabelFor(c.category).toLowerCase().includes(q))
+      );
+    }
+    const mode = notableSortSelect.value;
+    cards = cards.slice();
+    if (mode === 'year-asc') cards.sort((a, b) => a.year - b.year);
+    else if (mode === 'player') cards.sort((a, b) => (a.player || '').localeCompare(b.player || ''));
+    else if (mode === 'brand') cards.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''));
+    else if (mode === 'team') cards.sort((a, b) => (a.team || '').localeCompare(b.team || ''));
+    else cards.sort((a, b) => b.year - a.year);
+    return cards;
+  }
+
   function renderNotableList(cat) {
-    const cards = notableCardsForCategory(cat.key);
+    const total = notableCardsForCategory(cat.key).length;
+    const cards = visibleNotableCards(cat);
     const showCategory = cat.key === 'all';
     notableTitle.textContent = cat.label;
-    notableCount.textContent = cards.length + (cards.length === 1 ? ' notable card' : ' notable cards');
+    notableCount.textContent = total + (total === 1 ? ' notable card' : ' notable cards');
     document.title = `The Card Box — Notable Cards — ${cat.label}`;
 
-    if (cards.length === 0) {
+    if (total === 0) {
       notableListArea.innerHTML = `
         <div class="empty-state">
           <div class="display">No notable cards yet</div>
           <p>On any Collection page, set a card's Card Location to &ldquo;Notable Card&rdquo; and it'll show up here.</p>
+        </div>`;
+      return;
+    }
+    if (cards.length === 0) {
+      notableListArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No matches</div>
+          <p>Nothing here fits the current search.</p>
         </div>`;
       return;
     }
@@ -23029,6 +23074,7 @@
         <table class="list-table">
           <thead>
             <tr>
+              <th class="narrow-col">#</th>
               ${showCategory ? '<th>Category</th>' : ''}
               <th class="narrow-col">Year</th>
               <th>Manufacturer</th>
@@ -23038,7 +23084,7 @@
               <th class="narrow-col">Card Location</th>
             </tr>
           </thead>
-          <tbody>${cards.map(c => buildNotableRow(c, showCategory)).join('')}</tbody>
+          <tbody>${cards.map((c, i) => buildNotableRow(c, i, showCategory)).join('')}</tbody>
         </table>
       </div>`;
 
@@ -23328,6 +23374,10 @@
     }
 
     if (section === 'notable' && cat) {
+      currentNotableCat = cat;
+      notableQuery = '';
+      notableSearchInput.value = '';
+      notableSortSelect.value = 'year-desc';
       renderNotableList(cat);
       showScreen('notable');
       return;
@@ -23349,6 +23399,13 @@
   sortSelect.addEventListener('change', renderList);
   indSearchInput.addEventListener('input', () => { indQuery = indSearchInput.value; renderIndList(); });
   indSortSelect.addEventListener('change', renderIndList);
+  notableSearchInput.addEventListener('input', () => {
+    notableQuery = notableSearchInput.value;
+    if (currentNotableCat) renderNotableList(currentNotableCat);
+  });
+  notableSortSelect.addEventListener('change', () => {
+    if (currentNotableCat) renderNotableList(currentNotableCat);
+  });
   document.getElementById('select-all-btn').addEventListener('click', () => {
     if (!currentSet) return;
     const list = setCards.filter(c => c.category === currentSet.category && c.year === currentSet.year && c.brand === currentSet.brand);
