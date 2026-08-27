@@ -26343,9 +26343,12 @@
   function brandFamily(brand) { return (brand || '').replace(/\s+(Rookie & Traded|Opening Day|Update|Traded|Rookies)$/i, ''); }
 
   function renderMenus() {
-    menuCompleted.innerHTML = CATEGORIES.map(cat => {
+    let completedTotal = 0, completedCardTotal = 0;
+    const completedTiles = CATEGORIES.map(cat => {
       const count = sets.filter(s => s.category === cat.key).length;
       const cardCount = setCards.filter(c => c.category === cat.key).length;
+      completedTotal += count;
+      completedCardTotal += cardCount;
       return `<a class="cat-tile" data-sport="${cat.key}" href="#completed/${cat.key}">
         <span class="cat-icon">${CATEGORY_ICONS[cat.key] || ''}</span>
         <div class="label">${cat.label}</div>
@@ -26353,14 +26356,30 @@
         <div class="cat-subvalue">${cardCount.toLocaleString()} ${cardCount === 1 ? 'card' : 'cards'}</div>
       </a>`;
     }).join('');
-    menuIndividual.innerHTML = CATEGORIES.map(cat => {
+    const completedAllTile = `<a class="cat-tile" data-sport="all" href="#completed/all">
+        <span class="cat-icon">${CATEGORY_ICONS.all}</span>
+        <div class="label">All Sports</div>
+        <div class="value">${completedTotal}</div>
+        <div class="cat-subvalue">${completedCardTotal.toLocaleString()} ${completedCardTotal === 1 ? 'card' : 'cards'}</div>
+      </a>`;
+    menuCompleted.innerHTML = completedAllTile + completedTiles;
+
+    let indTotal = 0;
+    const indTiles = CATEGORIES.map(cat => {
       const count = individualCards.filter(c => c.category === cat.key).length;
+      indTotal += count;
       return `<a class="cat-tile" data-sport="${cat.key}" href="#individual/${cat.key}">
         <span class="cat-icon">${CATEGORY_ICONS[cat.key] || ''}</span>
         <div class="label">${cat.label}</div>
         <div class="value">${count}</div>
       </a>`;
     }).join('');
+    const indAllTile = `<a class="cat-tile" data-sport="all" href="#individual/all">
+        <span class="cat-icon">${CATEGORY_ICONS.all}</span>
+        <div class="label">All Sports</div>
+        <div class="value">${indTotal}</div>
+      </a>`;
+    menuIndividual.innerHTML = indAllTile + indTiles;
     let notableTotal = 0;
     const notableTiles = CATEGORIES.map(cat => {
       const count = notableCardsForCategory(cat.key).length;
@@ -26453,7 +26472,7 @@
   homeSearchInput.addEventListener('input', () => renderHomeSearch(homeSearchInput.value));
 
   function renderChips() {
-    const inCategory = sets.filter(s => s.category === activeCategory && (activeBrand === null || s.brand === activeBrand));
+    const inCategory = sets.filter(s => (activeCategory === 'all' || s.category === activeCategory) && (activeBrand === null || s.brand === activeBrand));
     const decades = [...new Set(inCategory.map(s => decadeOf(s.year)).filter(Boolean))].sort((a, b) => a - b);
     if (decades.length < 2) { chipsWrap.innerHTML = ''; return; }
     chipsWrap.innerHTML = `<button class="chip${activeDecade === null ? ' active' : ''}" data-decade="">All decades</button>` +
@@ -26470,7 +26489,7 @@
   }
 
   function renderYearChips() {
-    let inScope = sets.filter(s => s.category === activeCategory && (activeBrand === null || s.brand === activeBrand));
+    let inScope = sets.filter(s => (activeCategory === 'all' || s.category === activeCategory) && (activeBrand === null || s.brand === activeBrand));
     if (activeDecade !== null) inScope = inScope.filter(s => decadeOf(s.year) === activeDecade);
     const years = [...new Set(inScope.map(s => s.year).filter(Boolean))].sort((a, b) => a - b);
     if (years.length < 2) { yearChipsWrap.innerHTML = ''; return; }
@@ -26486,7 +26505,7 @@
   }
 
   function renderBrandChips() {
-    const inCategory = sets.filter(s => s.category === activeCategory);
+    const inCategory = sets.filter(s => activeCategory === 'all' || s.category === activeCategory);
     const brands = [...new Set(inCategory.map(s => brandFamily(s.brand)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     if (brands.length < 2) { brandChipsWrap.innerHTML = ''; return; }
     brandChipsWrap.innerHTML = `<button class="chip${activeBrand === null ? ' active' : ''}" data-brand="">All Manufacturers</button>` +
@@ -26505,7 +26524,7 @@
   }
 
   function visibleSets() {
-    let list = sets.filter(s => s.category === activeCategory);
+    let list = sets.filter(s => activeCategory === 'all' || s.category === activeCategory);
     if (activeBrand !== null) list = list.filter(s => brandFamily(s.brand) === activeBrand);
     if (activeDecade !== null) list = list.filter(s => decadeOf(s.year) === activeDecade);
     if (activeYear !== null) list = list.filter(s => s.year === activeYear);
@@ -26565,8 +26584,9 @@
   }
 
   function renderList() {
-    const total = sets.filter(s => s.category === activeCategory).length;
+    const total = sets.filter(s => activeCategory === 'all' || s.category === activeCategory).length;
     const list = visibleSets();
+    const showCategory = activeCategory === 'all';
     catCount.textContent = total + (total === 1 ? ' set' : ' sets');
 
     if (total === 0) {
@@ -26592,6 +26612,7 @@
           <thead>
             <tr>
               <th class="narrow-col">#</th>
+              ${showCategory ? '<th>Category</th>' : ''}
               <th class="narrow-col">Year</th>
               <th class="brand-col">Manufacturer</th>
               <th class="narrow-col">Type</th>
@@ -26604,6 +26625,7 @@
             ${list.map((s, i) => `
               <tr>
                 <td class="mono">${i + 1}</td>
+                ${showCategory ? `<td>${esc(catLabelFor(s.category))}</td>` : ''}
                 <td class="mono">${s.year ? `<a class="year-link" href="#completed/${s.category}/${setSlug(s)}">${displayYear(s)}</a>` : '&mdash;'}</td>
                 <td class="brand-cell">${esc(s.brand) || '&mdash;'}</td>
                 <td>
@@ -26884,7 +26906,7 @@
   }
 
   function renderIndChips() {
-    const inCategory = individualCards.filter(c => c.category === activeIndCategory);
+    const inCategory = individualCards.filter(c => activeIndCategory === 'all' || c.category === activeIndCategory);
     const decades = [...new Set(inCategory.map(c => decadeOf(c.year)).filter(Boolean))].sort((a, b) => a - b);
     if (decades.length < 2) { indChipsWrap.innerHTML = ''; return; }
     indChipsWrap.innerHTML = `<button class="chip${activeIndDecade === null ? ' active' : ''}" data-decade="">All decades</button>` +
@@ -26899,7 +26921,7 @@
   }
 
   function visibleIndividualCards() {
-    let list = individualCards.filter(c => c.category === activeIndCategory);
+    let list = individualCards.filter(c => activeIndCategory === 'all' || c.category === activeIndCategory);
     if (activeIndDecade !== null) list = list.filter(c => decadeOf(c.year) === activeIndDecade);
     if (indQuery) {
       const q = indQuery.toLowerCase();
@@ -26914,8 +26936,9 @@
   }
 
   function renderIndList() {
-    const total = individualCards.filter(c => c.category === activeIndCategory).length;
+    const total = individualCards.filter(c => activeIndCategory === 'all' || c.category === activeIndCategory).length;
     const list = visibleIndividualCards();
+    const showCategory = activeIndCategory === 'all';
     indCount.textContent = total + (total === 1 ? ' card' : ' cards');
 
     if (total === 0) {
@@ -26941,6 +26964,7 @@
           <thead>
             <tr>
               <th class="narrow-col">Card #</th>
+              ${showCategory ? '<th>Category</th>' : ''}
               <th>Player</th>
               <th>Team</th>
               <th class="narrow-col">Year</th>
@@ -26952,6 +26976,7 @@
             ${list.map(c => `
               <tr>
                 <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
+                ${showCategory ? `<td>${esc(catLabelFor(c.category))}</td>` : ''}
                 <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
                 <td>${esc(c.team) || '&mdash;'}</td>
                 <td class="mono">${c.year || '&mdash;'}</td>
@@ -27276,7 +27301,7 @@
   function route() {
     updateTotalCount();
     const [section, rawCategory, rawSetSlug] = location.hash.replace('#', '').split('/').map(decodeURIComponent);
-    const cat = (section === 'notable' && rawCategory === 'all')
+    const cat = (rawCategory === 'all' && (section === 'notable' || section === 'completed' || section === 'individual'))
       ? { key: 'all', label: 'All Sports' }
       : CATEGORIES.find(c => c.key === rawCategory);
 
@@ -27311,8 +27336,8 @@
       query = '';
       searchInput.value = '';
       sortSelect.value = 'year-brand';
-      catTitle.textContent = completedLabel(cat.label);
-      document.title = `The Card Box — Completed Sets — ${completedLabel(cat.label)}`;
+      catTitle.textContent = cat.key === 'all' ? cat.label : completedLabel(cat.label);
+      document.title = `The Card Box — Completed Sets — ${cat.key === 'all' ? cat.label : completedLabel(cat.label)}`;
       renderBrandChips();
       renderChips();
       renderYearChips();
