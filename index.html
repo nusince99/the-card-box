@@ -28438,6 +28438,33 @@
     try { localStorage.setItem(cardLocationKey(set, cardNumber), value); } catch (e) {}
   }
 
+  // Individual Cards has its own location + grade fields (separate storage keys/labels from
+  // the Collection page's Card Location above) — a loose card is a "Single," not "In Box."
+  const IND_CARD_LOCATIONS = ['Single', 'Notable Card'];
+  function indLocationKey(c) {
+    return `cardbox-indlocation:${c.category}:${c.year}:${c.brand}:${c.cardNumber}`;
+  }
+  function getIndCardLocation(c) {
+    try {
+      const v = localStorage.getItem(indLocationKey(c));
+      return v === null ? 'Single' : v;
+    } catch (e) { return 'Single'; }
+  }
+  function setIndCardLocation(c, value) {
+    try { localStorage.setItem(indLocationKey(c), value); } catch (e) {}
+  }
+
+  const GRADE_OPTIONS = ['Not Graded', '10', '9', '8', '7', '6', '5', '4', '3', '2', '1'];
+  function indGradeKey(c) {
+    return `cardbox-grade:${c.category}:${c.year}:${c.brand}:${c.cardNumber}`;
+  }
+  function getIndCardGrade(c) {
+    try { return localStorage.getItem(indGradeKey(c)) || 'Not Graded'; } catch (e) { return 'Not Graded'; }
+  }
+  function setIndCardGrade(c, value) {
+    try { localStorage.setItem(indGradeKey(c), value); } catch (e) {}
+  }
+
   // Nicknames as they appear inside blank-team card titles ("Braves Leaders", "A's Future Stars (...)")
   // mapped to the full franchise name used elsewhere in the data, so those cards can show a real
   // team instead of just "Highlight". Baseball-only — the other categories' blank-team cards
@@ -28667,6 +28694,7 @@
               <th class="narrow-col">Year</th>
               <th>Manufacturer</th>
               <th>Status</th>
+              <th class="narrow-col">Graded</th>
               <th class="narrow-col">Card Location</th>
             </tr>
           </thead>
@@ -28681,9 +28709,13 @@
                 <td>${esc(c.brand) || '&mdash;'}</td>
                 <td>${c.rookie ? 'Rookie' : 'Active'}</td>
                 <td>
+                  <select class="grade-select" data-category="${esc(c.category)}" data-year="${c.year}" data-brand="${esc(c.brand)}" data-cardnum="${esc(c.cardNumber)}" aria-label="Grade of ${esc(c.player)}">
+                    ${GRADE_OPTIONS.map(g => `<option value="${esc(g)}"${getIndCardGrade(c) === g ? ' selected' : ''}>${esc(g)}</option>`).join('')}
+                  </select>
+                </td>
+                <td>
                   <select class="location-select" data-category="${esc(c.category)}" data-year="${c.year}" data-brand="${esc(c.brand)}" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
-                    <option value=""${getCardLocation(c, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
-                    ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(c, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
+                    ${IND_CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getIndCardLocation(c) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
                   </select>
                 </td>
               </tr>
@@ -28694,8 +28726,14 @@
 
     indListArea.querySelectorAll('.location-select').forEach(sel => {
       sel.addEventListener('change', () => {
-        const cardObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand };
-        setCardLocation(cardObj, sel.dataset.cardnum, sel.value);
+        const cardObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand, cardNumber: sel.dataset.cardnum };
+        setIndCardLocation(cardObj, sel.value);
+      });
+    });
+    indListArea.querySelectorAll('.grade-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const cardObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand, cardNumber: sel.dataset.cardnum };
+        setIndCardGrade(cardObj, sel.value);
       });
     });
   }
