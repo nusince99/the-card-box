@@ -28667,6 +28667,7 @@
               <th class="narrow-col">Year</th>
               <th>Manufacturer</th>
               <th>Status</th>
+              <th class="narrow-col">Card Location</th>
             </tr>
           </thead>
           <tbody>
@@ -28679,11 +28680,24 @@
                 <td class="mono">${c.year || '&mdash;'}</td>
                 <td>${esc(c.brand) || '&mdash;'}</td>
                 <td>${c.rookie ? 'Rookie' : 'Active'}</td>
+                <td>
+                  <select class="location-select" data-category="${esc(c.category)}" data-year="${c.year}" data-brand="${esc(c.brand)}" data-cardnum="${esc(c.cardNumber)}" aria-label="Storage location of ${esc(c.player)}">
+                    <option value=""${getCardLocation(c, c.cardNumber) === '' ? ' selected' : ''}>&mdash;</option>
+                    ${CARD_LOCATIONS.map(loc => `<option value="${esc(loc)}"${getCardLocation(c, c.cardNumber) === loc ? ' selected' : ''}>${esc(loc)}</option>`).join('')}
+                  </select>
+                </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>`;
+
+    indListArea.querySelectorAll('.location-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const cardObj = { category: sel.dataset.category, year: Number(sel.dataset.year), brand: sel.dataset.brand };
+        setCardLocation(cardObj, sel.dataset.cardnum, sel.value);
+      });
+    });
   }
 
   function buildNotableRow(c, i, showCategory) {
