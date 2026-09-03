@@ -30663,10 +30663,18 @@
       </tr>`;
   }
 
+  // Error/variant cards are stored as separate rows sharing a number with a trailing letter
+  // (e.g. "3a"/"3b"), so per-variant checklist/location state can differ. The main table only
+  // shows one row per base number; the individual variants surface via the "Errors & Misprints"
+  // filter chip instead of cluttering the default list.
+  function baseCardNumber(cardNumber) {
+    return String(cardNumber).replace(/^(\d+)[a-z]$/, '$1');
+  }
+
   function buildCardRow(set, c) {
     return `
       <tr>
-        <td class="mono">${esc(c.cardNumber) || '&mdash;'}</td>
+        <td class="mono">${esc(baseCardNumber(c.cardNumber)) || '&mdash;'}</td>
         <td class="brand-cell">${esc(c.player)}${c.rookie ? '<span class="rc-mark">RC</span>' : ''}</td>
         <td>${esc(teamLabel(c))}</td>
         <td style="text-align:center;"><input type="checkbox" class="collect-check" data-cardnum="${esc(c.cardNumber)}" ${isCardChecked(set, c.cardNumber) ? 'checked' : ''} aria-label="Mark ${esc(c.player)} as verified in your collection"></td>
@@ -30690,7 +30698,12 @@
   }
 
   function renderSetLocationChips() {
-    const options = [{ value: null, label: 'All' }, { value: 'In Box', label: 'In Box' }, { value: 'Notable Card', label: 'Notable Card' }, { value: 'Rookie', label: 'Rookie' }];
+    const options = [{ value: null, label: 'All' }, { value: 'In Box', label: 'In Box' }, { value: 'Notable Card', label: 'Notable Card' }, { value: 'Rookie', label: 'Rookies' }];
+    const counts = {};
+    currentSetCards().forEach(c => { const b = baseCardNumber(c.cardNumber); counts[b] = (counts[b] || 0) + 1; });
+    if (Object.values(counts).some(n => n > 1)) {
+      options.push({ value: 'ErrorsVariants', label: 'Errors & Misprints' });
+    }
     setLocationChipsWrap.innerHTML = options.map(o =>
       `<button class="chip${setLocationFilter === o.value ? ' active' : ''}" data-value="${esc(o.value || '')}">${esc(o.label)}</button>`
     ).join('');
@@ -30747,11 +30760,25 @@
     }
     if (setLocationFilter === 'Rookie') {
       visibleList = visibleList.filter(c => c.rookie);
+    } else if (setLocationFilter === 'ErrorsVariants') {
+      const counts = {};
+      list.forEach(c => { const b = baseCardNumber(c.cardNumber); counts[b] = (counts[b] || 0) + 1; });
+      visibleList = visibleList.filter(c => counts[baseCardNumber(c.cardNumber)] > 1);
     } else if (setLocationFilter !== null) {
       visibleList = visibleList.filter(c => getCardLocation(set, c.cardNumber) === setLocationFilter);
     }
     if (setTeamFilter) {
       visibleList = visibleList.filter(c => teamLabel(c) === setTeamFilter);
+    }
+    if (setLocationFilter !== 'ErrorsVariants') {
+      // Collapse error/variant rows to one per base card number for the default list view.
+      const seenNumbers = new Set();
+      visibleList = visibleList.filter(c => {
+        const b = baseCardNumber(c.cardNumber);
+        if (seenNumbers.has(b)) return false;
+        seenNumbers.add(b);
+        return true;
+      });
     }
 
     if (visibleList.length === 0) {
