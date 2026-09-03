@@ -30473,10 +30473,11 @@
                 </td>
                 <td class="key-cards-cell">${esc(s.keyCards) || '&mdash;'}</td>
                 <td>
+                  ${getSetQuantity(s) > 1 ? `
                   <select class="packaging-select" data-category="${s.category}" data-year="${s.year}" data-brand="${esc(s.brand)}" aria-label="Packaging of ${esc(s.brand)} set">
                     <option value=""${getPackaging(s) === '' ? ' selected' : ''}>&mdash;</option>
                     ${PACKAGING_OPTIONS.map(p => `<option value="${esc(p)}"${getPackaging(s) === p ? ' selected' : ''}>${esc(p)}</option>`).join('')}
-                  </select>
+                  </select>` : '&mdash;'}
                 </td>
                 <td><input type="number" min="1" class="quantity-input" data-category="${s.category}" data-year="${s.year}" data-brand="${esc(s.brand)}" value="${getSetQuantity(s)}" aria-label="Quantity of ${esc(s.brand)} sets owned"></td>
               </tr>
@@ -30488,9 +30489,9 @@
     listArea.querySelectorAll('.quantity-input').forEach(inp => {
       inp.addEventListener('change', () => {
         const setObj = { category: inp.dataset.category, year: Number(inp.dataset.year), brand: inp.dataset.brand };
-        const n = setSetQuantity(setObj, inp.value);
-        inp.value = n;
+        setSetQuantity(setObj, inp.value);
         updateTotalCount();
+        renderList();
       });
     });
     listArea.querySelectorAll('.settype-select').forEach(sel => {
