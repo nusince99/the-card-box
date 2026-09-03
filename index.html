@@ -705,7 +705,7 @@
       </div>
     </div>
     <div class="toolbar">
-      <input type="search" id="set-search" placeholder="Search this set&rsquo;s players&hellip;" aria-label="Search players in this set" />
+      <input type="search" id="set-search" placeholder="Search players or card &num;&hellip;" aria-label="Search players or card number in this set" />
       <select id="set-team-filter" aria-label="Filter by team">
         <option value="">All Teams</option>
       </select>
@@ -30756,7 +30756,10 @@
     let visibleList = list;
     if (setDetailQuery) {
       const q = setDetailQuery.toLowerCase();
-      visibleList = visibleList.filter(c => (c.player || '').toLowerCase().includes(q));
+      visibleList = visibleList.filter(c =>
+        (c.player || '').toLowerCase().includes(q) ||
+        String(c.cardNumber || '').toLowerCase().includes(q)
+      );
     }
     if (setLocationFilter === 'Rookie') {
       visibleList = visibleList.filter(c => c.rookie);
