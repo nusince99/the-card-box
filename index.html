@@ -30473,11 +30473,10 @@
                 </td>
                 <td class="key-cards-cell">${esc(s.keyCards) || '&mdash;'}</td>
                 <td>
-                  ${getSetQuantity(s) > 1 ? `
                   <select class="packaging-select" data-category="${s.category}" data-year="${s.year}" data-brand="${esc(s.brand)}" aria-label="Packaging of ${esc(s.brand)} set">
                     <option value=""${getPackaging(s) === '' ? ' selected' : ''}>&mdash;</option>
-                    ${PACKAGING_OPTIONS.map(p => `<option value="${esc(p)}"${getPackaging(s) === p ? ' selected' : ''}>${esc(p)}</option>`).join('')}
-                  </select>` : '&mdash;'}
+                    ${(getSetQuantity(s) >= 2 ? [...PACKAGING_OPTIONS, 'Open/Sealed'] : PACKAGING_OPTIONS).map(p => `<option value="${esc(p)}"${getPackaging(s) === p ? ' selected' : ''}>${esc(p)}</option>`).join('')}
+                  </select>
                 </td>
                 <td><input type="number" min="1" class="quantity-input" data-category="${s.category}" data-year="${s.year}" data-brand="${esc(s.brand)}" value="${getSetQuantity(s)}" aria-label="Quantity of ${esc(s.brand)} sets owned"></td>
               </tr>
