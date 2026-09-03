@@ -30773,16 +30773,15 @@
     if (setTeamFilter) {
       visibleList = visibleList.filter(c => teamLabel(c) === setTeamFilter);
     }
-    if (setLocationFilter !== 'ErrorsVariants') {
-      // Collapse error/variant rows to one per base card number for the default list view.
-      const seenNumbers = new Set();
-      visibleList = visibleList.filter(c => {
-        const b = baseCardNumber(c.cardNumber);
-        if (seenNumbers.has(b)) return false;
-        seenNumbers.add(b);
-        return true;
-      });
-    }
+    // Collapse error/variant rows to one per base card number — including on the Errors &
+    // Misprints view itself, which should just list each affected card once.
+    const seenNumbers = new Set();
+    visibleList = visibleList.filter(c => {
+      const b = baseCardNumber(c.cardNumber);
+      if (seenNumbers.has(b)) return false;
+      seenNumbers.add(b);
+      return true;
+    });
 
     if (visibleList.length === 0) {
       setListArea.innerHTML = `
