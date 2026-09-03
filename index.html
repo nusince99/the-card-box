@@ -30729,30 +30729,11 @@
     collectionStats.innerHTML = `<span><strong>${checkedCount}</strong> checked</span><span><strong>${notableCountInSet}</strong> notable</span>`;
   }
 
-  function renderSetDetail(cat, set) {
-    currentSet = set;
-    currentSetCat = cat;
-    const list = setCards.filter(c => c.category === set.category && c.year === set.year && c.brand === set.brand);
-    const checkedCount = list.filter(c => isCardChecked(set, c.cardNumber)).length;
-    setTitle.textContent = `${displayYear(set)} ${set.brand}`;
-    setCount.textContent = list.length ? `${checkedCount} of ${list.length} verified` : '0 cards logged';
-    setBackLink.href = `#completed/${cat.key}`;
-    setBackLink.textContent = `← ${completedLabel(cat.label)}`;
-    document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
-
-    updateCollectionStats(set, list);
-    renderSetLocationChips();
-    renderSetTeamFilter(list);
-
-    if (list.length === 0) {
-      setListArea.innerHTML = `
-        <div class="empty-state">
-          <div class="display">No cards logged</div>
-          <p>Send over player names, card numbers, and which are rookie cards and they'll get slotted in here.</p>
-        </div>`;
-      return;
-    }
-
+  // The exact filter pipeline the Collection page table applies (search, location/rookie/
+  // errors chip, team, then one-row-per-base-number dedup). Shared by renderSetDetail (what's
+  // drawn) and the bulk Select All/Clear All buttons (what they act on), so those buttons only
+  // touch whatever's currently visible instead of silently applying to the whole set.
+  function visibleSetCards(set, list) {
     let visibleList = list;
     if (setDetailQuery) {
       const q = setDetailQuery.toLowerCase();
@@ -30782,6 +30763,34 @@
       seenNumbers.add(b);
       return true;
     });
+    return visibleList;
+  }
+
+  function renderSetDetail(cat, set) {
+    currentSet = set;
+    currentSetCat = cat;
+    const list = setCards.filter(c => c.category === set.category && c.year === set.year && c.brand === set.brand);
+    const checkedCount = list.filter(c => isCardChecked(set, c.cardNumber)).length;
+    setTitle.textContent = `${displayYear(set)} ${set.brand}`;
+    setCount.textContent = list.length ? `${checkedCount} of ${list.length} verified` : '0 cards logged';
+    setBackLink.href = `#completed/${cat.key}`;
+    setBackLink.textContent = `← ${completedLabel(cat.label)}`;
+    document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
+
+    updateCollectionStats(set, list);
+    renderSetLocationChips();
+    renderSetTeamFilter(list);
+
+    if (list.length === 0) {
+      setListArea.innerHTML = `
+        <div class="empty-state">
+          <div class="display">No cards logged</div>
+          <p>Send over player names, card numbers, and which are rookie cards and they'll get slotted in here.</p>
+        </div>`;
+      return;
+    }
+
+    const visibleList = visibleSetCards(set, list);
 
     if (visibleList.length === 0) {
       setListArea.innerHTML = `
@@ -31343,26 +31352,24 @@
   });
   document.getElementById('select-all-btn').addEventListener('click', () => {
     if (!currentSet) return;
-    const list = setCards.filter(c => c.category === currentSet.category && c.year === currentSet.year && c.brand === currentSet.brand);
-    setAllChecked(currentSet, list, true);
+    setAllChecked(currentSet, visibleSetCards(currentSet, currentSetCards()), true);
     renderSetDetail(currentSetCat, currentSet);
     updateTotalCount();
   });
   document.getElementById('clear-all-btn').addEventListener('click', () => {
     if (!currentSet) return;
-    const list = setCards.filter(c => c.category === currentSet.category && c.year === currentSet.year && c.brand === currentSet.brand);
-    setAllChecked(currentSet, list, false);
+    setAllChecked(currentSet, visibleSetCards(currentSet, currentSetCards()), false);
     renderSetDetail(currentSetCat, currentSet);
     updateTotalCount();
   });
   document.getElementById('select-all-location-btn').addEventListener('click', () => {
     if (!currentSet) return;
-    setAllField(currentSet, currentSetCards(), setCardLocation, 'In Box');
+    setAllField(currentSet, visibleSetCards(currentSet, currentSetCards()), setCardLocation, 'In Box');
     renderSetDetail(currentSetCat, currentSet);
   });
   document.getElementById('clear-all-location-btn').addEventListener('click', () => {
     if (!currentSet) return;
-    setAllField(currentSet, currentSetCards(), setCardLocation, '');
+    setAllField(currentSet, visibleSetCards(currentSet, currentSetCards()), setCardLocation, '');
     renderSetDetail(currentSetCat, currentSet);
   });
   window.addEventListener('hashchange', route);
