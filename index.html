@@ -382,6 +382,21 @@
     outline: 2px solid var(--stamp);
     outline-offset: 1px;
   }
+  .collection-stats {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    margin: -0.9rem 0 1.4rem;
+    font-family: "Space Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+  }
+  .collection-stats strong {
+    color: var(--stamp);
+    font-weight: 700;
+  }
 
   .chips {
     display: flex;
@@ -695,6 +710,7 @@
         <option value="">All Teams</option>
       </select>
     </div>
+    <div class="collection-stats" id="collection-stats"></div>
     <div class="chips" id="set-location-chips"></div>
     <div id="set-list-area"></div>
   </div>
@@ -30136,6 +30152,7 @@
   const setListArea = document.getElementById('set-list-area');
   const setSearchInput = document.getElementById('set-search');
   const setTeamFilterSelect = document.getElementById('set-team-filter');
+  const collectionStats = document.getElementById('collection-stats');
   const setLocationChipsWrap = document.getElementById('set-location-chips');
   const indTitle = document.getElementById('ind-title');
   const indCount = document.getElementById('ind-count');
@@ -30693,6 +30710,12 @@
     setTeamFilterSelect.value = setTeamFilter || '';
   }
 
+  function updateCollectionStats(set, list) {
+    const checkedCount = list.filter(c => isCardChecked(set, c.cardNumber)).length;
+    const notableCountInSet = list.filter(c => getCardLocation(set, c.cardNumber) === 'Notable Card').length;
+    collectionStats.innerHTML = `<span><strong>${checkedCount}</strong> checked</span><span><strong>${notableCountInSet}</strong> notable</span>`;
+  }
+
   function renderSetDetail(cat, set) {
     currentSet = set;
     currentSetCat = cat;
@@ -30704,6 +30727,7 @@
     setBackLink.textContent = `← ${completedLabel(cat.label)}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
 
+    updateCollectionStats(set, list);
     renderSetLocationChips();
     renderSetTeamFilter(list);
 
@@ -30746,12 +30770,14 @@
         setCardChecked(set, cb.dataset.cardnum, cb.checked);
         const nowChecked = list.filter(c => isCardChecked(set, c.cardNumber)).length;
         setCount.textContent = `${nowChecked} of ${list.length} verified`;
+        updateCollectionStats(set, list);
         updateTotalCount();
       });
     });
     setListArea.querySelectorAll('.location-select').forEach(sel => {
       sel.addEventListener('change', () => {
         setCardLocation(set, sel.dataset.cardnum, sel.value);
+        updateCollectionStats(set, list);
         if (setLocationFilter !== null) renderSetDetail(cat, set);
       });
     });
