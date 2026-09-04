@@ -30723,9 +30723,28 @@
     setTeamFilterSelect.value = setTeamFilter || '';
   }
 
+  // Collapses a set's cards to one row per base card number (keeping the first-listed variant
+  // of each error/misprint pair). This is the canonical "how many distinct cards does this set
+  // have" list — every count/total shown to the user (the "X of Y verified" header, the checked/
+  // notable stats, Select All/Clear All, the site-wide Total Cards badge) is computed from this,
+  // not the raw setCards array, so a set with a 327a/327b variant pair still reads as its real
+  // 660-card size instead of 661, and a checked/notable count can never include a variant that
+  // isn't actually shown/reachable anywhere in the UI (which previously let state drift out of
+  // sync with what the checkboxes on screen showed).
+  function dedupedSetCards(list) {
+    const seen = new Set();
+    return list.filter(c => {
+      const b = baseCardNumber(c.cardNumber);
+      if (seen.has(b)) return false;
+      seen.add(b);
+      return true;
+    });
+  }
+
   function updateCollectionStats(set, list) {
-    const checkedCount = list.filter(c => isCardChecked(set, c.cardNumber)).length;
-    const notableCountInSet = list.filter(c => getCardLocation(set, c.cardNumber) === 'Notable Card').length;
+    const deduped = dedupedSetCards(list);
+    const checkedCount = deduped.filter(c => isCardChecked(set, c.cardNumber)).length;
+    const notableCountInSet = deduped.filter(c => getCardLocation(set, c.cardNumber) === 'Notable Card').length;
     collectionStats.innerHTML = `<span><strong>${checkedCount}</strong> checked</span><span><strong>${notableCountInSet}</strong> notable</span>`;
   }
 
@@ -30756,23 +30775,17 @@
     }
     // Collapse error/variant rows to one per base card number — including on the Errors &
     // Misprints view itself, which should just list each affected card once.
-    const seenNumbers = new Set();
-    visibleList = visibleList.filter(c => {
-      const b = baseCardNumber(c.cardNumber);
-      if (seenNumbers.has(b)) return false;
-      seenNumbers.add(b);
-      return true;
-    });
-    return visibleList;
+    return dedupedSetCards(visibleList);
   }
 
   function renderSetDetail(cat, set) {
     currentSet = set;
     currentSetCat = cat;
     const list = setCards.filter(c => c.category === set.category && c.year === set.year && c.brand === set.brand);
-    const checkedCount = list.filter(c => isCardChecked(set, c.cardNumber)).length;
+    const dedupedList = dedupedSetCards(list);
+    const checkedCount = dedupedList.filter(c => isCardChecked(set, c.cardNumber)).length;
     setTitle.textContent = `${displayYear(set)} ${set.brand}`;
-    setCount.textContent = list.length ? `${checkedCount} of ${list.length} verified` : '0 cards logged';
+    setCount.textContent = dedupedList.length ? `${checkedCount} of ${dedupedList.length} verified` : '0 cards logged';
     setBackLink.href = `#completed/${cat.key}`;
     setBackLink.textContent = `← ${completedLabel(cat.label)}`;
     document.title = `The Card Box — ${displayYear(set)} ${set.brand}`;
@@ -30806,8 +30819,8 @@
     setListArea.querySelectorAll('.collect-check').forEach(cb => {
       cb.addEventListener('change', () => {
         setCardChecked(set, cb.dataset.cardnum, cb.checked);
-        const nowChecked = list.filter(c => isCardChecked(set, c.cardNumber)).length;
-        setCount.textContent = `${nowChecked} of ${list.length} verified`;
+        const nowChecked = dedupedList.filter(c => isCardChecked(set, c.cardNumber)).length;
+        setCount.textContent = `${nowChecked} of ${dedupedList.length} verified`;
         updateCollectionStats(set, list);
         updateTotalCount();
       });
@@ -31048,7 +31061,7 @@
 
   function updateTotalCount() {
     const checkedInSets = sets.reduce((sum, s) => {
-      const cards = setCards.filter(c => c.category === s.category && c.year === s.year && c.brand === s.brand);
+      const cards = dedupedSetCards(setCards.filter(c => c.category === s.category && c.year === s.year && c.brand === s.brand));
       const checked = cards.filter(c => isCardChecked(s, c.cardNumber)).length;
       const qty = getSetQuantity(s);
       const extraFullSets = qty > 1 ? (qty - 1) * cards.length : 0;
